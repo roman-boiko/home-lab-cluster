@@ -11,4 +11,4 @@ defaultSettings:
   defaultDataPath: /opt/longhorn
 
   # Volumes created from the UI (or without SC override) get 1 replica
-  defaultReplicaCount: 1
+  defaultReplicaCount: "1"
