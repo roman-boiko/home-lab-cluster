@@ -5,31 +5,31 @@ metadata:
   user: admin
 spec:
   hosts:
-  - ssh:
-      address: 192.168.2.100
-      user: rboiko
-      port: 22
-      keyPath: ~/.ssh/id_ed25519
-    role: controller+worker
-    noTaints: true
-  - ssh:
-      address: 192.168.2.101
-      user: rboiko
-      port: 22
-      keyPath: ~/.ssh/id_ed25519
-    role: worker
-  - ssh:
-      address: 192.168.2.102
-      user: rboiko
-      port: 22
-      keyPath: ~/.ssh/id_ed25519
-    role: worker
-  - ssh:
-      address: 192.168.2.103
-      user: rboiko
-      port: 22
-      keyPath: ~/.ssh/id_ed25519
-    role: worker
+    - ssh:
+        address: 192.168.2.101
+        user: romanboiko
+        port: 22
+        keyPath: ~/.ssh/id_ed25519
+      role: controller+worker
+      noTaints: true
+    - ssh:
+        address: 192.168.2.102
+        user: romanboiko
+        port: 22
+        keyPath: ~/.ssh/id_ed25519
+      role: worker
+    - ssh:
+        address: 192.168.2.103
+        user: romanboiko
+        port: 22
+        keyPath: ~/.ssh/id_ed25519
+      role: worker
+    - ssh:
+        address: 192.168.2.104
+        user: romanboiko
+        port: 22
+        keyPath: ~/.ssh/id_ed25519
+      role: worker
   k0s:
     config:
       apiVersion: k0s.k0sproject.io/v1beta1
