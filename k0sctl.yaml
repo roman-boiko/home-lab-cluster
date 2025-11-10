@@ -6,31 +6,32 @@ metadata:
 spec:
   hosts:
     - ssh:
-        address: 192.168.2.101
+        address: 192.168.5.200
         user: romanboiko
         port: 22
         keyPath: ~/.ssh/id_ed25519
       role: controller+worker
       noTaints: true
     - ssh:
-        address: 192.168.2.102
+        address: 192.168.5.201
         user: romanboiko
         port: 22
         keyPath: ~/.ssh/id_ed25519
       role: worker
     - ssh:
-        address: 192.168.2.103
+        address: 192.168.5.202
         user: romanboiko
         port: 22
         keyPath: ~/.ssh/id_ed25519
       role: worker
     - ssh:
-        address: 192.168.2.104
+        address: 192.168.5.203
         user: romanboiko
         port: 22
         keyPath: ~/.ssh/id_ed25519
       role: worker
   k0s:
+    version: v1.34.1+k0s.1
     config:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: Cluster
