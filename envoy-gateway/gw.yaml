@@ -1,0 +1,51 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: edge-gw
+  namespace: gw-system
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http-root
+      hostname: "home.rboiko.com"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: http-wildcard
+      hostname: "*.home.rboiko.com"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+
+    - name: https-root
+      hostname: "home.rboiko.com"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: home-rboiko-com-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-wildcard
+      hostname: "*.home.rboiko.com"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: wildcard-home-rboiko-com-tls
+      allowedRoutes:
+        namespaces:
+          from: All
