@@ -22,3 +22,40 @@ spec:
       enabled: true
     liveProcessCollection:
       enabled: true
+  override:
+    nodeAgent:
+      env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: valkey-password
+              key: admin
+      extraConfd:
+        configDataMap:
+          redisdb.yaml: |-
+            ad_identifiers:
+              - valkey
+            init_config:
+            instances:
+              - host: "%%host%%"
+                port: 6379
+                password: "%%env_REDIS_PASSWORD%%"
+                tags:
+                  - "database:valkey"
+            logs:
+              - type: docker
+                source: valkey
+                service: valkey
+          keycloak.yaml: |-
+            ad_identifiers:
+              - keycloak
+              - jboss-wildfly
+            init_config:
+            instances:
+              # The native keycloak check handles logs, not metrics.
+              - tags:
+                - "auth:keycloak"
+            logs:
+              - type: docker
+                source: keycloak
+                service: keycloak

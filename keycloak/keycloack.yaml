@@ -1,0 +1,44 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak-auth
+  namespace: keycloak
+spec:
+  instances: 2
+  
+  # 1. Database Configuration
+  db:
+    vendor: postgres
+    host: keycloak-db-rw 
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-app
+      key: username
+    passwordSecret:
+      name: keycloak-db-app
+      key: password
+
+  # 2. Network Configuration
+  ingress:
+    enabled: false # We will handle this with Gateway API
+  
+  # 3. Hostname Configuration (Required for Gateway API)
+  hostname:
+    hostname: auth.home.rboiko.com
+
+  additionalOptions:
+    # 1. Solve "Key material not provided / HTTPS not enabled"
+    # This enables the HTTP listener on port 8080
+    - name: http-enabled
+      value: "true"
+    
+    # 2. Solve "Likely misconfiguration... proxy-headers unset"
+    # This tells Keycloak to trust headers (X-Forwarded-Proto) from the Gateway
+    - name: proxy-headers
+      value: "xforwarded"
+      
+    # 3. Solve "insecure context" (Optional but recommended for Gateway API)
+    # This ensures Keycloak generates HTTPS links even if it receives HTTP traffic
+    - name: hostname-strict-https
+      value: "false"

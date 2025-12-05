@@ -1,0 +1,55 @@
+# Number of Valkey pods to run
+replicaCount: 1
+
+# Annotations and labels for the pods
+podAnnotations:
+  ad.datadoghq.com/redis.checks: |
+      {
+        "redisdb": {
+          "init_config": {},
+          "instances": [
+            {
+              "host": "%%host%%",
+              "port":"6379",
+              "password":"%%env_REDIS_PASSWORD%%"
+            }
+          ]
+        }
+      }
+service:
+  # Type of Kubernetes service (ClusterIP, NodePort, LoadBalancer)
+  type: LoadBalancer
+  # Port on which Valkey will be exposed
+  port: 6379
+
+# Resource limits/requests for the main Valkey container
+resources:
+  # Example:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+
+# Persistent storage configuration
+dataStorage:
+  # Enable persistent volume claim creation
+  enabled: true
+
+  # Access modes for the PVC (e.g., ReadWriteOnce, ReadWriteMany)
+  accessModes:
+    - ReadWriteOnce
+
+  # If true, keep the PVC on Helm uninstall
+  keepPvc: false
+auth:
+  # Enable ACL-based authentication
+  enabled: true
+
+  # Use an existing secret for user passwords. Key defaults to username.
+  usersExistingSecret: "valkey-password"
+  aclUsers:
+    default:
+      permissions: "~* &* +@all"
+      passwordKey: "admin"

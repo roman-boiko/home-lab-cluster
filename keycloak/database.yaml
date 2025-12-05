@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+spec:
+  instances: 3
+  
+  # 1. Bootstrap: Create the initial DB and User
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+      
+  # 2. Storage Configuration
+  storage:
+    size: 10Gi
+    
+  # 3. High Availability & Updates
+  # Automated failover is enabled by default
+  primaryUpdateStrategy: unsupervised
