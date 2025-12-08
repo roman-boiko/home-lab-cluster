@@ -6,7 +6,7 @@ metadata:
 spec:
   instances: 2
   
-  # 1. Database Configuration
+  # Database Configuration
   db:
     vendor: postgres
     host: keycloak-db-rw 
@@ -19,26 +19,33 @@ spec:
       name: keycloak-db-app
       key: password
 
-  # 2. Network Configuration
+  # Network Configuration
   ingress:
     enabled: false # We will handle this with Gateway API
   
-  # 3. Hostname Configuration (Required for Gateway API)
+  # Hostname Configuration (Required for Gateway API)
   hostname:
     hostname: auth.home.rboiko.com
 
   additionalOptions:
-    # 1. Solve "Key material not provided / HTTPS not enabled"
+    # Solve "Key material not provided / HTTPS not enabled"
     # This enables the HTTP listener on port 8080
     - name: http-enabled
       value: "true"
     
-    # 2. Solve "Likely misconfiguration... proxy-headers unset"
+    # Solve "Likely misconfiguration... proxy-headers unset"
     # This tells Keycloak to trust headers (X-Forwarded-Proto) from the Gateway
     - name: proxy-headers
       value: "xforwarded"
       
-    # 3. Solve "insecure context" (Optional but recommended for Gateway API)
+    # Solve "insecure context" (Optional but recommended for Gateway API)
     # This ensures Keycloak generates HTTPS links even if it receives HTTP traffic
     - name: hostname-strict-https
       value: "false"
+    # Format: <root-level>,<category>:<level>
+    # INFO is the default root level. We add DEBUG for events.
+    - name: log-level
+      value: "INFO,org.keycloak.events:DEBUG"
+    # Use structured JSON logging for better log parsing
+    - name: log-console-output
+      value: "json"
