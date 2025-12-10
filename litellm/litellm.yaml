@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: litellm-config-file
+  namespace: llms
 data:
   config.yaml: |
       model_list: 
@@ -32,17 +33,17 @@ data:
         - model_name: gemini-2.5-flash
           litellm_params:
             model: gemini/gemini-2.5-flash
-            api_key: os.environ/GOOGLE_API_KEY
-            
+            api_key: os.environ/GOOGLE_API_KEY        
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: litellm-deployment
+  namespace: llms
   labels:
     app: litellm
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: litellm
@@ -66,6 +67,12 @@ spec:
         envFrom:
         - secretRef:
             name: litellm-secrets
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: litellm-db-app
+              key: fqdn-uri
         resources:
           requests:
             cpu: 100m
@@ -100,6 +107,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: llms
   name: litellm-service
   labels:
     app: litellm
@@ -116,6 +124,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
+  namespace: llms
   name: litellm-route
 spec:
   parentRefs:

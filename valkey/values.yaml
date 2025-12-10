@@ -18,7 +18,7 @@ podAnnotations:
       }
 service:
   # Type of Kubernetes service (ClusterIP, NodePort, LoadBalancer)
-  type: LoadBalancer
+  type: ClusterIP
   # Port on which Valkey will be exposed
   port: 6379
 
@@ -26,11 +26,11 @@ service:
 resources:
   # Example:
   limits:
-    cpu: 1000m
-    memory: 2048Mi
-  requests:
     cpu: 500m
     memory: 1024Mi
+  requests:
+    cpu: 250m
+    memory: 512Mi
 
 # Persistent storage configuration
 dataStorage:
