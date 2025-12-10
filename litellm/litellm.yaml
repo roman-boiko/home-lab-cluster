@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config-file
+data:
+  config.yaml: |
+      model_list: 
+        - model_name: gpt-5.1
+          litellm_params:
+            model: openai/gpt-5.1
+            api_key: os.environ/OPENAI_API_KEY
+        - model_name: gpt-5-mini
+          litellm_params:
+            model: openai/gpt-5-mini
+            api_key: os.environ/OPENAI_API_KEY
+        - model_name: gpt-5-nano
+          litellm_params:
+            model: openai/gpt-5-nano
+            api_key: os.environ/OPENAI_API_KEY
+        - model_name: claude-sonnet-4-5
+          litellm_params:
+            model: anthropic/claude-sonnet-4-5
+            api_key: os.environ/ANTHROPIC_API_KEY
+        - model_name: claude-opus-4-5
+          litellm_params:
+            model: anthropic/claude-opus-4-5
+            api_key: os.environ/ANTHROPIC_API_KEY
+        - model_name: gemini-3-pro-preview
+          litellm_params:
+            model: gemini/gemini-3-pro-preview
+            api_key: os.environ/GOOGLE_API_KEY
+        - model_name: gemini-2.5-flash
+          litellm_params:
+            model: gemini/gemini-2.5-flash
+            api_key: os.environ/GOOGLE_API_KEY
+            
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm-deployment
+  labels:
+    app: litellm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: litellm
+  template:
+    metadata:
+      labels:
+        app: litellm
+    spec:
+      containers:
+      - name: litellm
+        image: ghcr.io/berriai/litellm:main-stable # it is recommended to fix a version generally
+        args:
+          - "--config"
+          - "/app/proxy_server_config.yaml"
+        ports:
+        - containerPort: 4000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/proxy_server_config.yaml
+          subPath: config.yaml
+        envFrom:
+        - secretRef:
+            name: litellm-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: 4000
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 10
+        readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 4000
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 10
+      volumes:
+        - name: config-volume
+          configMap:
+            name: litellm-config-file
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm-service
+  labels:
+    app: litellm
+spec:
+  selector:
+    app: litellm
+  ports:
+  - port: 4000
+    targetPort: 4000
+    protocol: TCP
+    name: http
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: litellm-route
+spec:
+  parentRefs:
+  - name: edge-gw
+    namespace: gw-system
+    sectionName: https-wildcard
+  hostnames:
+  - "litellm.home.rboiko.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: litellm-service
+      port: 4000
+
+
