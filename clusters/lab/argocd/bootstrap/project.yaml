@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: home-lab
+  namespace: argocd
+spec:
+  description: Home lab cluster configuration managed from Git
+  sourceRepos:
+    - https://github.com/roman-boiko/home-lab-cluster.git
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+

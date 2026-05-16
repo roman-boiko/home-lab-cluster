@@ -101,6 +101,16 @@ pass "Argo CD server is rolled out"
 kubectl_wait -n argocd rollout status deployment/argocd-repo-server --timeout=300s
 pass "Argo CD repo server is rolled out"
 
+kubectl_wait -n argocd get application home-lab-cluster
+pass "Argo CD root application exists"
+
+root_app_sync_status="$(kubectl -n argocd get application home-lab-cluster -o jsonpath='{.status.sync.status}')"
+[[ "${root_app_sync_status}" == "Synced" ]] || fail "Argo CD root application is ${root_app_sync_status:-unknown}, expected Synced"
+pass "Argo CD root application is synced"
+
+kubectl_wait get namespace home-lab-system
+pass "GitOps-managed home-lab-system namespace exists"
+
 ansible -i "${INVENTORY}" k3s_cluster -b -m command -a 'systemctl is-active iscsid' >/dev/null
 pass "iscsid is active on all nodes"
 

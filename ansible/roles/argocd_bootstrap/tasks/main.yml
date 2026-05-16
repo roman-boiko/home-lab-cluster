@@ -19,3 +19,32 @@
   changed_when: false
   when: install_argocd | bool
 
+- name: Stage Argo CD GitOps bootstrap resources on server
+  ansible.builtin.copy:
+    src: "{{ argocd_bootstrap_path }}/"
+    dest: "{{ argocd_remote_bootstrap_path }}/"
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+  when: install_argocd | bool
+
+- name: Apply Argo CD GitOps bootstrap resources
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -k {{ argocd_remote_bootstrap_path }}"
+  changed_when: true
+  when: install_argocd | bool
+
+- name: Wait for Argo CD root application to exist
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} get application {{ argocd_root_application_name }}"
+  register: argocd_root_app
+  retries: 30
+  delay: 5
+  until: argocd_root_app.rc == 0
+  changed_when: false
+  when: install_argocd | bool
+
+- name: Trigger initial root application sync
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} patch application {{ argocd_root_application_name }} --type merge -p '{\"operation\":{\"sync\":{\"prune\":true,\"syncOptions\":{\"items\":[\"ServerSideApply=true\",\"PruneLast=true\"]}}}}'"
+  changed_when: true
+  failed_when: false
+  when: install_argocd | bool

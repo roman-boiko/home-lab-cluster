@@ -39,6 +39,9 @@ argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/m
 argocd_rollout_deployments:
   - argocd-server
   - argocd-repo-server
+argocd_bootstrap_path: "{{ playbook_dir }}/../clusters/lab/argocd/bootstrap"
+argocd_remote_bootstrap_path: /tmp/home-lab-argocd-bootstrap
+argocd_root_application_name: home-lab-cluster
 
 fetch_kubeconfig: true
 local_kubeconfig_dir: "{{ playbook_dir }}/../kubeconfig"

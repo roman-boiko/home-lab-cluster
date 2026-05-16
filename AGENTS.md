@@ -15,7 +15,7 @@ Avoid committing generated files, local machine artifacts, or secrets.
 
 ## Architecture & Change Flow
 
-Use Ansible only for initial cluster installation and base k3s configuration, including Cilium bootstrap networking. After Argo CD is installed, all application and infrastructure changes must be made through Git and reconciled by Argo CD. Avoid direct `kubectl apply`, manual Helm installs, or ad hoc node changes except for recovery.
+Use Ansible only for initial cluster installation and base k3s configuration, including Cilium bootstrap networking and the Argo CD root application. After Argo CD is installed, all application and infrastructure changes must be committed under `clusters/lab/gitops` and reconciled by Argo CD. Avoid direct `kubectl apply`, manual Helm installs, or ad hoc node changes except for recovery.
 
 ## Build, Test, and Development Commands
 

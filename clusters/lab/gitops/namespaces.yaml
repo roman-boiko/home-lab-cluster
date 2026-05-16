@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: home-lab-system
+  labels:
+    app.kubernetes.io/managed-by: argocd
+

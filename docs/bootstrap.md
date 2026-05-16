@@ -48,13 +48,15 @@ Apply the bootstrap:
 scripts/bootstrap-cluster.sh
 ```
 
-Ansible installs k3s first, joins the agent nodes, installs Cilium networking, then installs Argo CD as the final bootstrap step.
+Ansible installs k3s first, joins the agent nodes, installs Cilium networking, then installs Argo CD. After Argo CD is running, Ansible applies only the bootstrap Argo CD resources from `clusters/lab/argocd/bootstrap`.
+
+The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`.
 
 The playbook also downloads the kubeconfig to `kubeconfig/lab-k3s.yaml` on the local machine and rewrites the API endpoint to the k3s server IP. This file is ignored by Git because it contains cluster credentials.
 
 ## 4. Post-Bootstrap Rule
 
-After Argo CD is installed, do not make routine changes with direct `kubectl apply`, manual Helm installs, or node-local edits. Commit desired state to Git and let Argo CD reconcile it.
+After Argo CD is installed, do not make routine changes with direct `kubectl apply`, manual Helm installs, or node-local edits. Commit desired state under `clusters/lab/gitops` and let Argo CD reconcile it.
 
 Use the downloaded kubeconfig for local reads and diagnostics:
 
