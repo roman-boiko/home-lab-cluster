@@ -38,7 +38,7 @@ Cilium is configured for bare-metal `LoadBalancer` services with LB IPAM and L2 
 
 Cilium Gateway API is enabled during bootstrap. The shared GitOps-managed Gateway is `gateway-system/public-https`, uses address `192.168.5.100`, exposes HTTPS on port `443`, and exposes HTTP on port `80` only for `301` redirects to HTTPS. Backend routes from any namespace may attach to the HTTPS listeners.
 
-Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps.
+Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
 The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls`. Ansible does not create temporary TLS material.
 
