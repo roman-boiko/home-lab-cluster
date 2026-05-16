@@ -181,6 +181,13 @@ pass "cert-manager Argo CD application exists"
 kubectl_wait -n argocd get application cert-manager-config
 pass "cert-manager config Argo CD application exists"
 
+kubectl_wait -n argocd get application longhorn
+pass "Longhorn Argo CD application exists"
+
+longhorn_app_sync_status="$(kubectl -n argocd get application longhorn -o jsonpath='{.status.sync.status}')"
+[[ "${longhorn_app_sync_status}" == "Synced" ]] || fail "Longhorn Argo CD application is ${longhorn_app_sync_status:-unknown}, expected Synced"
+pass "Longhorn Argo CD application is synced"
+
 kubectl_wait -n cert-manager rollout status deployment/cert-manager --timeout=300s
 pass "cert-manager controller is rolled out"
 
@@ -207,6 +214,22 @@ if kubectl -n cert-manager get secret cloudflare-api-token >/dev/null 2>&1; then
 else
   info "Cloudflare API token secret is missing; skipped certificate Ready check"
 fi
+
+kubectl_wait -n longhorn-system rollout status daemonset/longhorn-manager --timeout=300s
+pass "Longhorn manager daemonset is rolled out"
+
+kubectl_wait -n longhorn-system rollout status deployment/longhorn-driver-deployer --timeout=300s
+pass "Longhorn driver deployer is rolled out"
+
+kubectl_wait -n longhorn-system rollout status deployment/longhorn-ui --timeout=300s
+pass "Longhorn UI is rolled out"
+
+kubectl_wait get storageclass longhorn
+pass "Longhorn StorageClass exists"
+
+default_storageclasses="$(kubectl get storageclass -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{" "}{end}')"
+[[ "${default_storageclasses}" == "longhorn " ]] || fail "Default StorageClass is '${default_storageclasses:-none}', expected 'longhorn'"
+pass "Longhorn is the only default StorageClass"
 
 ansible -i "${INVENTORY}" k3s_cluster -b -m command -a 'systemctl is-active iscsid' >/dev/null
 pass "iscsid is active on all nodes"

@@ -6,4 +6,5 @@ resources:
   - platform/cert-manager
   - platform/cilium
   - platform/gateway
+  - platform/longhorn
   - platform/sealed-secrets

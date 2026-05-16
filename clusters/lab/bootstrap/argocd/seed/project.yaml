@@ -10,6 +10,7 @@ spec:
     - https://charts.jetstack.io
     - https://bitnami-labs.github.io/sealed-secrets
     - https://helm.cilium.io
+    - https://charts.longhorn.io
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc

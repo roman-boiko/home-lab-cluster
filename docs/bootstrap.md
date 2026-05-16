@@ -38,6 +38,8 @@ Cilium is configured for bare-metal `LoadBalancer` services with LB IPAM and L2 
 
 Cilium Gateway API is enabled during bootstrap. The shared GitOps-managed Gateway is `gateway-system/public-https`, uses address `192.168.5.100`, exposes HTTPS on port `443`, and exposes HTTP on port `80` only for `301` redirects to HTTPS. Backend routes from any namespace may attach to the HTTPS listeners.
 
+Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps.
+
 The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls`. Ansible does not create temporary TLS material.
 
 cert-manager is installed by Argo CD from the Jetstack Helm chart. The production `ClusterIssuer` uses Let's Encrypt DNS-01 with Cloudflare and requests `home.rboiko.com` plus `*.home.rboiko.com` into the Gateway TLS Secret. The token must exist as `cert-manager/cloudflare-api-token`; manage it with Sealed Secrets or another encrypted GitOps workflow, not a plaintext manifest.
@@ -60,7 +62,7 @@ scripts/bootstrap-cluster.sh
 
 Ansible installs k3s first, joins the agent nodes, performs the first Cilium install if Cilium is missing, then applies the pinned Argo CD install overlay from `clusters/lab/bootstrap/argocd/install`. After Argo CD is running, Ansible applies only the seed resources from `clusters/lab/bootstrap/argocd/seed`.
 
-The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, Cilium, cert-manager, and Sealed Secrets after bootstrap.
+The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, Cilium, cert-manager, Longhorn, and Sealed Secrets after bootstrap.
 
 Argo CD pods include `dnsConfig.options.ndots=1` in the pinned install overlay so public Git hosts such as `github.com` resolve before the home-lab search domain.
 
@@ -84,4 +86,4 @@ Run the post-install validation script from the repository root:
 scripts/validate-cluster.sh
 ```
 
-The script checks Kubernetes API access, four Ready nodes, Cilium rollout, disabled k3s Flannel/ServiceLB/Traefik/network-policy components, Argo CD and child applications, cert-manager, Sealed Secrets, Longhorn host prerequisites, unattended upgrades, and disabled swap.
+The script checks Kubernetes API access, four Ready nodes, Cilium rollout, disabled k3s Flannel/ServiceLB/Traefik/network-policy components, Argo CD and child applications, cert-manager, Sealed Secrets, Longhorn rollout and default StorageClass, Longhorn host prerequisites, unattended upgrades, and disabled swap.

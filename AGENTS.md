@@ -8,7 +8,7 @@ This repository manages a Raspberry Pi home-lab Kubernetes cluster running k3s. 
 - `clusters/lab/bootstrap/argocd/install/`: pinned Argo CD install overlay, including DNS `ndots=1` patches.
 - `clusters/lab/bootstrap/argocd/seed/`: one-time AppProject and root Application applied by Ansible.
 - `clusters/lab/gitops/`: Argo CD root tree reconciled from Git.
-- `clusters/lab/gitops/platform/`: platform components managed by Argo CD: `argocd`, `cert-manager`, `cilium`, `gateway`, and `sealed-secrets`.
+- `clusters/lab/gitops/platform/`: platform components managed by Argo CD: `argocd`, `cert-manager`, `cilium`, `gateway`, `longhorn`, and `sealed-secrets`.
 - `scripts/`: repeatable helper scripts for bootstrap, validation, and maintenance.
 - `docs/`: runbooks, including bootstrap and encrypted secret workflows.
 
@@ -18,7 +18,7 @@ Avoid committing generated files, local machine artifacts, or secrets.
 
 Use Ansible only for bootstrap: OS preparation, initial k3s installation, first Cilium networking install, kubeconfig download, pinned Argo CD install, and the root Argo CD seed. After Argo CD is running, manage all platform and application changes through Git under `clusters/lab/gitops`.
 
-The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Cilium, cert-manager, Sealed Secrets, and the shared Gateway. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
+The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Cilium, cert-manager, Longhorn, Sealed Secrets, and the shared Gateway. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
 
 ## Build, Test, and Development Commands
 
