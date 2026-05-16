@@ -67,10 +67,12 @@ pass "Cilium LoadBalancer IP pool exists"
 kubectl_wait get ciliuml2announcementpolicy home-lab-l2-announcements
 pass "Cilium L2 announcement policy exists"
 
-kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all | grep -q 'EnableL2Announcements[[:space:]]*: true'
+cilium_config="$(kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all)"
+grep -q 'EnableL2Announcements[[:space:]]*: true' <<< "${cilium_config}"
 pass "Cilium L2 announcements are enabled"
 
-kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all | grep -q 'KubeProxyReplacement[[:space:]]*: true'
+cilium_status="$(kubectl -n kube-system exec ds/cilium -- cilium-dbg status --verbose)"
+grep -q 'KubeProxyReplacement:[[:space:]]*True' <<< "${cilium_status}"
 pass "Cilium kube-proxy replacement is enabled"
 
 if command -v cilium >/dev/null 2>&1; then

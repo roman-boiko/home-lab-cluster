@@ -66,7 +66,14 @@
     argv: "{{ ['/usr/local/bin/cilium', ('upgrade' if cilium_existing.rc == 0 else 'install'), '--namespace', cilium_namespace] + ((cilium_version | length > 0) | ternary(['--version', cilium_version], [])) + (cilium_install_settings | map('regex_replace', '^(.*)$', '--set=\\1') | list) }}"
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: cilium_install_or_upgrade
   when: install_cilium | bool
+
+- name: Restart Cilium agents after config changes
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ cilium_namespace }} rollout restart daemonset/cilium"
+  when:
+    - install_cilium | bool
+    - cilium_install_or_upgrade.changed
 
 - name: Wait for Cilium to become ready
   ansible.builtin.command: /usr/local/bin/cilium status --wait --wait-duration 5m
