@@ -78,16 +78,24 @@ pass "HTTPS Gateway exists"
 
 gateway_ports="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.port}{" "}{end}')"
 grep -q '443' <<< "${gateway_ports}" || fail "Gateway does not expose HTTPS port 443"
-if grep -q '80' <<< "${gateway_ports}"; then
-  fail "Gateway exposes HTTP port 80; only HTTPS should be exposed"
-fi
-pass "Gateway exposes only HTTPS listener ports"
+grep -q '80' <<< "${gateway_ports}" || fail "Gateway does not expose HTTP port 80 for redirects"
+pass "Gateway exposes HTTPS and HTTP redirect listener ports"
 
 gateway_protocols="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.protocol}{" "}{end}')"
-if grep -vq 'HTTPS' <<< "$(tr ' ' '\n' <<< "${gateway_protocols}" | sed '/^$/d')"; then
-  fail "Gateway has a non-HTTPS listener protocol: ${gateway_protocols}"
-fi
-pass "Gateway listener protocols are HTTPS only"
+grep -q 'HTTPS' <<< "${gateway_protocols}" || fail "Gateway has no HTTPS listener"
+grep -q 'HTTP' <<< "${gateway_protocols}" || fail "Gateway has no HTTP redirect listener"
+pass "Gateway listener protocols include HTTPS and HTTP redirect"
+
+kubectl_wait -n gateway-system get httproute http-to-https-redirect
+pass "HTTP to HTTPS redirect route exists"
+
+redirect_scheme="$(kubectl -n gateway-system get httproute http-to-https-redirect -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.scheme}')"
+[[ "${redirect_scheme}" == "https" ]] || fail "Redirect route scheme is ${redirect_scheme}, expected https"
+pass "HTTP redirect route targets HTTPS"
+
+redirect_status="$(kubectl -n gateway-system get httproute http-to-https-redirect -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.statusCode}')"
+[[ "${redirect_status}" == "301" ]] || fail "Redirect route status is ${redirect_status}, expected 301"
+pass "HTTP redirect route uses 301"
 
 cilium_config="$(kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all)"
 grep -q 'EnableL2Announcements[[:space:]]*: true' <<< "${cilium_config}"

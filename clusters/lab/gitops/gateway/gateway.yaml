@@ -9,6 +9,15 @@ spec:
     - type: IPAddress
       value: 192.168.5.100
   listeners:
+    - name: http-redirect
+      hostname: "*.home.rboiko.com"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        kinds:
+          - kind: HTTPRoute
+        namespaces:
+          from: Same
     - name: https-wildcard
       hostname: "*.home.rboiko.com"
       port: 443
@@ -22,6 +31,15 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: http-root-redirect
+      hostname: home.rboiko.com
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        kinds:
+          - kind: HTTPRoute
+        namespaces:
+          from: Same
     - name: https-root
       hostname: home.rboiko.com
       port: 443
