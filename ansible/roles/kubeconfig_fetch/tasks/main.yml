@@ -1,0 +1,44 @@
+---
+- name: Ensure local kubeconfig directory exists
+  ansible.builtin.file:
+    path: "{{ local_kubeconfig_dir }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: fetch_kubeconfig | bool
+
+- name: Download k3s kubeconfig
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ local_kubeconfig_path }}"
+    flat: true
+  when: fetch_kubeconfig | bool
+
+- name: Set local kubeconfig permissions
+  ansible.builtin.file:
+    path: "{{ local_kubeconfig_path }}"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: fetch_kubeconfig | bool
+
+- name: Point kubeconfig at the k3s server endpoint
+  ansible.builtin.replace:
+    path: "{{ local_kubeconfig_path }}"
+    regexp: 'https://127\.0\.0\.1:6443'
+    replace: "https://{{ ansible_host | default(inventory_hostname) }}:6443"
+  delegate_to: localhost
+  become: false
+  when: fetch_kubeconfig | bool
+
+- name: Rename kubeconfig default references
+  ansible.builtin.replace:
+    path: "{{ local_kubeconfig_path }}"
+    regexp: '\bdefault\b'
+    replace: "{{ kubeconfig_name }}"
+  delegate_to: localhost
+  become: false
+  when: fetch_kubeconfig | bool

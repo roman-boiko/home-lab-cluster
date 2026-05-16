@@ -1,0 +1,7 @@
+---
+- name: Reboot node
+  ansible.builtin.reboot:
+    msg: Rebooting after Raspberry Pi OS k3s preparation
+    reboot_timeout: 900
+  when: reboot_after_os_prepare | bool
+

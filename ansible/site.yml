@@ -1,0 +1,42 @@
+---
+- name: Prepare Raspberry Pi OS nodes for k3s and Longhorn
+  hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  roles:
+    - os_prepare
+
+- name: Install initial k3s server
+  hosts: k3s_servers
+  become: true
+  gather_facts: true
+  roles:
+    - k3s_server
+
+- name: Join k3s agent nodes
+  hosts: k3s_agents
+  become: true
+  gather_facts: true
+  roles:
+    - k3s_agent
+
+- name: Bootstrap Cilium networking
+  hosts: k3s_servers
+  become: true
+  gather_facts: true
+  roles:
+    - cilium_bootstrap
+
+- name: Bootstrap Argo CD
+  hosts: k3s_servers
+  become: true
+  gather_facts: false
+  roles:
+    - argocd_bootstrap
+
+- name: Download kubeconfig to local machine
+  hosts: k3s_servers
+  become: true
+  gather_facts: false
+  roles:
+    - kubeconfig_fetch

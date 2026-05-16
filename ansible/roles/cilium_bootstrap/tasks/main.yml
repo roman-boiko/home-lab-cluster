@@ -1,0 +1,76 @@
+---
+- name: Assert supported architecture for Cilium
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in ["aarch64", "arm64", "x86_64", "amd64"]
+    fail_msg: "Cilium supports arm64 and amd64. Use a 64-bit Raspberry Pi OS image."
+  when: install_cilium | bool
+
+- name: Set Cilium CLI architecture
+  ansible.builtin.set_fact:
+    cilium_cli_arch: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+  when: install_cilium | bool
+
+- name: Read latest stable Cilium CLI version
+  ansible.builtin.uri:
+    url: "{{ cilium_cli_stable_url }}"
+    return_content: true
+  register: cilium_cli_stable
+  when:
+    - install_cilium | bool
+    - cilium_cli_version | length == 0
+
+- name: Set effective Cilium CLI version
+  ansible.builtin.set_fact:
+    cilium_cli_effective_version: "{{ cilium_cli_version if cilium_cli_version | length > 0 else cilium_cli_stable.content | trim }}"
+  when: install_cilium | bool
+
+- name: Download Cilium CLI archive
+  ansible.builtin.get_url:
+    url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_effective_version }}/cilium-linux-{{ cilium_cli_arch }}.tar.gz"
+    dest: "/tmp/cilium-linux-{{ cilium_cli_arch }}.tar.gz"
+    mode: "0644"
+  when: install_cilium | bool
+
+- name: Download Cilium CLI checksum
+  ansible.builtin.get_url:
+    url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_effective_version }}/cilium-linux-{{ cilium_cli_arch }}.tar.gz.sha256sum"
+    dest: "/tmp/cilium-linux-{{ cilium_cli_arch }}.tar.gz.sha256sum"
+    mode: "0644"
+  when: install_cilium | bool
+
+- name: Verify Cilium CLI archive checksum
+  ansible.builtin.command: "sha256sum --check cilium-linux-{{ cilium_cli_arch }}.tar.gz.sha256sum"
+  args:
+    chdir: /tmp
+  changed_when: false
+  when: install_cilium | bool
+
+- name: Install Cilium CLI
+  ansible.builtin.unarchive:
+    src: "/tmp/cilium-linux-{{ cilium_cli_arch }}.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: "0755"
+  when: install_cilium | bool
+
+- name: Check for existing Cilium installation
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ cilium_namespace }} get daemonset cilium"
+  register: cilium_existing
+  changed_when: false
+  failed_when: false
+  when: install_cilium | bool
+
+- name: Install or upgrade Cilium
+  ansible.builtin.command:
+    argv: "{{ ['/usr/local/bin/cilium', ('upgrade' if cilium_existing.rc == 0 else 'install'), '--namespace', cilium_namespace] + ((cilium_version | length > 0) | ternary(['--version', cilium_version], [])) + (cilium_install_settings | map('regex_replace', '^(.*)$', '--set=\\1') | list) }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  when: install_cilium | bool
+
+- name: Wait for Cilium to become ready
+  ansible.builtin.command: /usr/local/bin/cilium status --wait --wait-duration 5m
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+  when: install_cilium | bool

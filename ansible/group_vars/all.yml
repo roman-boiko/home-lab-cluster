@@ -1,0 +1,73 @@
+---
+# Pin a version such as "v1.31.6+k3s1" for reproducible installs.
+# Leave empty to use the current stable version selected by the k3s installer.
+k3s_version: ""
+
+k3s_install_url: https://get.k3s.io
+
+# Keep base k3s small and leave networking to Cilium.
+k3s_server_config:
+  write-kubeconfig-mode: "0644"
+  flannel-backend: "none"
+  disable-network-policy: true
+  disable:
+    - servicelb
+    - traefik
+
+k3s_server_args: []
+k3s_agent_args: []
+
+install_cilium: true
+cilium_namespace: kube-system
+# Pin a version such as "1.19.3" for reproducible installs.
+# Leave empty to use the Cilium CLI default.
+cilium_version: ""
+# Pin a CLI version such as "v0.18.7" for reproducible installs.
+# Leave empty to download the current stable CLI version.
+cilium_cli_version: ""
+cilium_cli_stable_url: https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt
+cilium_k8s_service_host: "{{ hostvars[groups['k3s_servers'][0]].ansible_host | default(groups['k3s_servers'][0]) }}"
+cilium_k8s_service_port: 6443
+cilium_install_settings:
+  - k8sServiceHost={{ cilium_k8s_service_host }}
+  - k8sServicePort={{ cilium_k8s_service_port }}
+  - operator.replicas=1
+
+install_argocd: true
+argocd_namespace: argocd
+argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+argocd_rollout_deployments:
+  - argocd-server
+  - argocd-repo-server
+
+fetch_kubeconfig: true
+local_kubeconfig_dir: "{{ playbook_dir }}/../kubeconfig"
+local_kubeconfig_path: "{{ local_kubeconfig_dir }}/lab-k3s.yaml"
+kubeconfig_name: lab-k3s
+
+rpi_cmdline_flags:
+  - cgroup_memory=1
+  - cgroup_enable=memory
+
+reboot_after_os_prepare: true
+
+os_base_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - iproute2
+  - iptables
+  - jq
+  - unattended-upgrades
+
+longhorn_required_packages:
+  - cryptsetup
+  - dmsetup
+  - nfs-common
+  - open-iscsi
+  - util-linux
+
+longhorn_kernel_modules:
+  - iscsi_tcp
+  - dm_crypt

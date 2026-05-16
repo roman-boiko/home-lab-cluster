@@ -1,0 +1,48 @@
+---
+- name: Assert single-server bootstrap layout
+  ansible.builtin.assert:
+    that:
+      - groups["k3s_servers"] | length == 1
+    fail_msg: "This bootstrap currently supports one k3s server and multiple agents."
+
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write k3s server config
+  ansible.builtin.copy:
+    dest: /etc/rancher/k3s/config.yaml
+    content: "{{ k3s_server_config | to_nice_yaml(indent=2) }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart k3s
+
+- name: Download k3s installer
+  ansible.builtin.get_url:
+    url: "{{ k3s_install_url }}"
+    dest: /usr/local/bin/k3s-install.sh
+    mode: "0755"
+
+- name: Install k3s server
+  ansible.builtin.command: /usr/local/bin/k3s-install.sh
+  args:
+    creates: /etc/systemd/system/k3s.service
+  environment: "{{ {'INSTALL_K3S_EXEC': ('server ' + (k3s_server_args | join(' '))) | trim} | combine((k3s_version | length > 0) | ternary({'INSTALL_K3S_VERSION': k3s_version}, {})) }}"
+
+- name: Ensure k3s server is running
+  ansible.builtin.systemd:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for Kubernetes API
+  ansible.builtin.wait_for:
+    port: 6443
+    delay: 5
+    timeout: 180
+

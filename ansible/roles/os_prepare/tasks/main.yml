@@ -1,0 +1,135 @@
+---
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: "This bootstrap role expects Raspberry Pi OS or another Debian-family OS."
+
+- name: Install base OS and Longhorn packages
+  ansible.builtin.apt:
+    name: "{{ os_base_packages + longhorn_required_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Find Raspberry Pi boot cmdline file
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /boot/firmware/cmdline.txt
+    - /boot/cmdline.txt
+  register: rpi_cmdline_candidates
+
+- name: Select Raspberry Pi boot cmdline file
+  ansible.builtin.set_fact:
+    rpi_cmdline_path: "{{ (rpi_cmdline_candidates.results | selectattr('stat.exists') | map(attribute='item') | list | first) | default('/boot/firmware/cmdline.txt') }}"
+
+- name: Read Raspberry Pi boot cmdline
+  ansible.builtin.slurp:
+    src: "{{ rpi_cmdline_path }}"
+  register: rpi_cmdline_file
+
+- name: Enable memory cgroups for k3s
+  ansible.builtin.copy:
+    dest: "{{ rpi_cmdline_path }}"
+    content: "{{ (rpi_cmdline_file.content | b64decode | trim) }} {{ (rpi_cmdline_flags | difference(rpi_cmdline_file.content | b64decode | split)) | join(' ') }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  when: (rpi_cmdline_flags | difference(rpi_cmdline_file.content | b64decode | split)) | length > 0
+  notify: Reboot node
+
+- name: Disable active swap
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb | int > 0
+  changed_when: true
+
+- name: Disable swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#]\S+\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: Create Raspberry Pi swap config directory
+  ansible.builtin.file:
+    path: /etc/rpi/swap.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Disable Raspberry Pi zram and swapfile management
+  ansible.builtin.copy:
+    dest: /etc/rpi/swap.conf.d/99-disable-swap.conf
+    content: |
+      [Main]
+      Mechanism=none
+    owner: root
+    group: root
+    mode: "0644"
+  register: rpi_swap_config
+
+- name: Reload systemd after Raspberry Pi swap config change
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: rpi_swap_config.changed
+
+- name: Stop active Raspberry Pi zram swap if present
+  ansible.builtin.systemd:
+    name: dev-zram0.swap
+    state: stopped
+    masked: true
+  failed_when: false
+
+- name: Disable active swap after Raspberry Pi swap config
+  ansible.builtin.command: swapoff -a
+  changed_when: true
+  failed_when: false
+
+- name: Disable Raspberry Pi swap service if present
+  ansible.builtin.systemd:
+    name: dphys-swapfile
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Persist Longhorn kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/longhorn.conf
+    content: "{{ longhorn_kernel_modules | join('\n') }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Load Longhorn kernel modules
+  ansible.builtin.command: "modprobe {{ item }}"
+  loop: "{{ longhorn_kernel_modules }}"
+  changed_when: false
+  failed_when: false
+
+- name: Enable iSCSI services for Longhorn
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - iscsid
+    - open-iscsi
+  failed_when: false
+
+- name: Configure automatic package updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable unattended upgrades
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    enabled: true
+    state: started
