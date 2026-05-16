@@ -61,6 +61,18 @@ pass "Cilium daemonset is rolled out"
 kubectl_wait -n kube-system rollout status deployment/cilium-operator --timeout=300s
 pass "Cilium operator is rolled out"
 
+kubectl_wait get ciliumloadbalancerippool home-lab-lb-pool
+pass "Cilium LoadBalancer IP pool exists"
+
+kubectl_wait get ciliuml2announcementpolicy home-lab-l2-announcements
+pass "Cilium L2 announcement policy exists"
+
+kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all | grep -q 'EnableL2Announcements[[:space:]]*: true'
+pass "Cilium L2 announcements are enabled"
+
+kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all | grep -q 'KubeProxyReplacement[[:space:]]*: true'
+pass "Cilium kube-proxy replacement is enabled"
+
 if command -v cilium >/dev/null 2>&1; then
   cilium status --wait --wait-duration 5m >/dev/null
   pass "Cilium status is healthy"

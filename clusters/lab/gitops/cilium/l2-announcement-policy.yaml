@@ -1,0 +1,7 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: home-lab-l2-announcements
+spec:
+  loadBalancerIPs: true
+

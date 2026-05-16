@@ -34,6 +34,8 @@ disable:
 
 Cilium is installed during bootstrap before Argo CD. Pin `cilium_version` and `cilium_cli_version` in `ansible/group_vars/all.yml` for reproducible installs.
 
+Cilium is configured for bare-metal `LoadBalancer` services with LB IPAM and L2 announcements. The GitOps-managed IP pool is `192.168.5.100-192.168.5.200` on the `192.168.5.0/24` LAN.
+
 ## 3. Run Bootstrap
 
 Preview the run:

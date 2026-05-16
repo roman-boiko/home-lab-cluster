@@ -31,6 +31,10 @@ cilium_k8s_service_port: 6443
 cilium_install_settings:
   - k8sServiceHost={{ cilium_k8s_service_host }}
   - k8sServicePort={{ cilium_k8s_service_port }}
+  - kubeProxyReplacement=true
+  - l2announcements.enabled=true
+  - k8sClientRateLimit.qps=20
+  - k8sClientRateLimit.burst=40
   - operator.replicas=1
 
 install_argocd: true
