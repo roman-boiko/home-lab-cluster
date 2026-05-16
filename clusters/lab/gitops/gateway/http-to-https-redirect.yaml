@@ -17,7 +17,11 @@ spec:
     - home.rboiko.com
     - "*.home.rboiko.com"
   rules:
-    - filters:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https

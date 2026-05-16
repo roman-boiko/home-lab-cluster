@@ -15,7 +15,8 @@ spec:
       protocol: HTTP
       allowedRoutes:
         kinds:
-          - kind: HTTPRoute
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
         namespaces:
           from: Same
     - name: https-wildcard
@@ -37,7 +38,8 @@ spec:
       protocol: HTTP
       allowedRoutes:
         kinds:
-          - kind: HTTPRoute
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
         namespaces:
           from: Same
     - name: https-root
