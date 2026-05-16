@@ -40,11 +40,11 @@ Shell scripts should use `#!/usr/bin/env bash`, `set -euo pipefail`, and clear v
 
 Validate infrastructure before opening a pull request. For Ansible changes, run syntax checks and check mode. For post-bootstrap changes, validate rendered manifests and use Argo CD diff where possible. Name validation scripts by purpose, for example `scripts/validate-yaml.sh`.
 
-When CI is added, require formatting, linting, and manifest rendering.
+Use GitHub Actions as the CI platform for now. Workflows should run formatting, linting, Ansible syntax checks, and manifest rendering before changes are merged.
 
 ## Commit & Pull Request Guidelines
 
-This repository has no commit history yet, so use concise, imperative commit messages such as `Add external-dns manifests`.
+Use concise, imperative commit messages such as `Add external-dns manifests`.
 
 Pull requests should include a short description, affected cluster or app, validation commands run, and operational impact. Link related issues when available.
 
