@@ -148,12 +148,32 @@ pass "Argo CD repo server is rolled out"
 kubectl_wait -n argocd get application home-lab-cluster
 pass "Argo CD root application exists"
 
+kubectl_wait -n argocd get application argocd
+pass "Argo CD self-management application exists"
+
 root_app_sync_status="$(kubectl -n argocd get application home-lab-cluster -o jsonpath='{.status.sync.status}')"
 [[ "${root_app_sync_status}" == "Synced" ]] || fail "Argo CD root application is ${root_app_sync_status:-unknown}, expected Synced"
 pass "Argo CD root application is synced"
 
+argocd_app_sync_status="$(kubectl -n argocd get application argocd -o jsonpath='{.status.sync.status}')"
+[[ "${argocd_app_sync_status}" == "Synced" ]] || fail "Argo CD self-management application is ${argocd_app_sync_status:-unknown}, expected Synced"
+pass "Argo CD self-management application is synced"
+
 kubectl_wait get namespace home-lab-system
 pass "GitOps-managed home-lab-system namespace exists"
+
+kubectl_wait -n argocd get application sealed-secrets
+pass "Sealed Secrets Argo CD application exists"
+
+kubectl_wait -n sealed-secrets rollout status deployment/sealed-secrets-controller --timeout=300s
+pass "Sealed Secrets controller is rolled out"
+
+kubectl_wait -n argocd get application cilium
+pass "Cilium Argo CD application exists"
+
+cilium_app_sync_status="$(kubectl -n argocd get application cilium -o jsonpath='{.status.sync.status}')"
+[[ "${cilium_app_sync_status}" == "Synced" ]] || fail "Cilium Argo CD application is ${cilium_app_sync_status:-unknown}, expected Synced"
+pass "Cilium Argo CD application is synced"
 
 kubectl_wait -n argocd get application cert-manager
 pass "cert-manager Argo CD application exists"

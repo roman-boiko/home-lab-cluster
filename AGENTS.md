@@ -2,45 +2,50 @@
 
 ## Project Structure & Module Organization
 
-This repository manages a home-lab Kubernetes cluster running on k3s. Group code by concern:
+This repository manages a Raspberry Pi home-lab Kubernetes cluster running k3s. Keep files grouped by lifecycle:
 
-- `ansible/`: bootstrap playbooks and inventory for installing and configuring the initial k3s cluster.
-- `clusters/`: environment-specific cluster definitions, for example `clusters/prod/` or `clusters/lab/`.
-- `apps/`: application manifests, Helm values, or Kustomize overlays.
-- `infra/`: shared infrastructure modules such as networking, storage, ingress, and certificates.
+- `ansible/`: Raspberry Pi OS preparation, k3s install, first Cilium install, Argo CD seed, and kubeconfig fetch.
+- `clusters/lab/bootstrap/argocd/install/`: pinned Argo CD install overlay, including DNS `ndots=1` patches.
+- `clusters/lab/bootstrap/argocd/seed/`: one-time AppProject and root Application applied by Ansible.
+- `clusters/lab/gitops/`: Argo CD root tree reconciled from Git.
+- `clusters/lab/gitops/platform/`: platform components managed by Argo CD: `argocd`, `cert-manager`, `cilium`, `gateway`, and `sealed-secrets`.
 - `scripts/`: repeatable helper scripts for bootstrap, validation, and maintenance.
-- `docs/`: architecture notes and runbooks.
+- `docs/`: runbooks, including bootstrap and encrypted secret workflows.
 
 Avoid committing generated files, local machine artifacts, or secrets.
 
 ## Architecture & Change Flow
 
-Use Ansible only for initial cluster installation and base k3s configuration, including Cilium bootstrap networking and the Argo CD root application. After Argo CD is installed, all application and infrastructure changes must be committed under `clusters/lab/gitops` and reconciled by Argo CD. Avoid direct `kubectl apply`, manual Helm installs, or ad hoc node changes except for recovery.
+Use Ansible only for bootstrap: OS preparation, initial k3s installation, first Cilium networking install, kubeconfig download, pinned Argo CD install, and the root Argo CD seed. After Argo CD is running, manage all platform and application changes through Git under `clusters/lab/gitops`.
+
+The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Cilium, cert-manager, Sealed Secrets, and the shared Gateway. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
 
 ## Build, Test, and Development Commands
 
-No project-specific build system exists yet. Recommended baseline commands:
+Recommended baseline commands:
 
 - `git status --short`: inspect pending changes.
 - `scripts/bootstrap-cluster.sh --check`: preview bootstrap or k3s configuration changes.
-- `kubectl diff -k apps/<name>/overlays/<env>`: preview Kubernetes manifest changes when Kustomize overlays are added.
-- `helm lint charts/<chart>`: validate Helm charts.
+- `kubectl kustomize clusters/lab/gitops`: render the Argo CD root tree.
+- `kubectl kustomize clusters/lab/bootstrap/argocd/seed`: render bootstrap seed manifests.
+- `kubectl kustomize clusters/lab/bootstrap/argocd/install`: render the pinned Argo CD install overlay.
 - `argocd app diff <app-name>`: compare Git state with the live cluster.
+- `scripts/validate-cluster.sh`: validate the live cluster after bootstrap or sync.
 - `yamllint .`: lint YAML files.
 
 Prefer scripts in `scripts/` for repeatable multi-step operations.
 
 ## Coding Style & Naming Conventions
 
-Use two-space indentation for YAML. Use lowercase, hyphen-separated names for directories, Kubernetes resources, and files, for example `apps/external-dns/values-lab.yaml`. Keep manifests declarative and environment overrides isolated under the relevant environment directory.
+Use two-space indentation for YAML. Use lowercase, hyphen-separated names for directories, Kubernetes resources, and files, for example `clusters/lab/gitops/platform/cert-manager`. Keep manifests declarative and keep lab-specific state under `clusters/lab/`.
 
 Shell scripts should use `#!/usr/bin/env bash`, `set -euo pipefail`, and clear variable names.
 
 ## Testing Guidelines
 
-Validate infrastructure before opening a pull request. For Ansible changes, run syntax checks and check mode. For post-bootstrap changes, validate rendered manifests and use Argo CD diff where possible. Name validation scripts by purpose, for example `scripts/validate-yaml.sh`.
+Validate infrastructure before opening a pull request. For Ansible changes, run syntax checks and check mode where safe. For GitOps changes, render the affected Kustomize tree and use Argo CD diff where possible.
 
-Use GitHub Actions as the CI platform for now. Workflows should run formatting, linting, Ansible syntax checks, and manifest rendering before changes are merged.
+GitHub Actions is the CI platform. The current workflow lints YAML, checks Ansible syntax, and renders the Argo CD bootstrap/install and root GitOps Kustomize trees.
 
 ## Commit & Pull Request Guidelines
 
@@ -50,4 +55,4 @@ Pull requests should include a short description, affected cluster or app, valid
 
 ## Security & Configuration Tips
 
-Do not commit kubeconfigs, tokens, private keys, decrypted secrets, or local state files. Prefer sealed or encrypted secret workflows and document restore steps in `docs/`.
+Do not commit kubeconfigs, tokens, private keys, decrypted secrets, or local state files. Runtime secrets should use Sealed Secrets or another encrypted GitOps workflow. Use `scripts/seal-cloudflare-token.sh` to generate the encrypted `cert-manager/cloudflare-api-token` manifest from `CLOUDFLARE_API_TOKEN`; see `docs/secrets.md`.

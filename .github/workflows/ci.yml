@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible yamllint
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Lint YAML
+        run: yamllint .
+
+      - name: Check Ansible syntax
+        run: ansible-playbook -i ansible/inventory/hosts.ini ansible/site.yml --syntax-check
+
+      - name: Render Argo CD bootstrap
+        run: kubectl kustomize clusters/lab/bootstrap/argocd/seed
+
+      - name: Render Argo CD install
+        run: kubectl kustomize clusters/lab/bootstrap/argocd/install
+
+      - name: Render cluster GitOps manifests
+        run: kubectl kustomize clusters/lab/gitops

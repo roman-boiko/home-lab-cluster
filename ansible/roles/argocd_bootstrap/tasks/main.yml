@@ -8,112 +8,18 @@
     - "'AlreadyExists' not in argocd_namespace_create.stderr"
   when: install_argocd | bool
 
-- name: Install Argo CD bootstrap manifests
-  ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}"
-  changed_when: true
-  when: install_argocd | bool
-
-- name: Create shared Gateway namespace
-  ansible.builtin.command: "/usr/local/bin/k3s kubectl create namespace {{ gateway_namespace }}"
-  register: gateway_namespace_create
-  changed_when: gateway_namespace_create.rc == 0
-  failed_when:
-    - gateway_namespace_create.rc != 0
-    - "'AlreadyExists' not in gateway_namespace_create.stderr"
-  when: install_argocd | bool
-
-- name: Create cert-manager namespace
-  ansible.builtin.command: "/usr/local/bin/k3s kubectl create namespace {{ cert_manager_namespace }}"
-  register: cert_manager_namespace_create
-  changed_when: cert_manager_namespace_create.rc == 0
-  failed_when:
-    - cert_manager_namespace_create.rc != 0
-    - "'AlreadyExists' not in cert_manager_namespace_create.stderr"
-  when: install_argocd | bool
-
-- name: Install Cloudflare API token secret for cert-manager
-  ansible.builtin.shell: >
-    /usr/local/bin/k3s kubectl -n {{ cert_manager_namespace }}
-    create secret generic {{ cloudflare_api_token_secret_name }}
-    --from-literal=api-token="$CLOUDFLARE_API_TOKEN"
-    --dry-run=client -o yaml |
-    /usr/local/bin/k3s kubectl apply --server-side --force-conflicts -f -
-  environment:
-    CLOUDFLARE_API_TOKEN: "{{ cloudflare_api_token }}"
-  no_log: true
-  changed_when: true
-  when:
-    - install_argocd | bool
-    - cloudflare_api_token | length > 0
-
-- name: Warn when Cloudflare API token is not configured
-  ansible.builtin.debug:
-    msg: "CLOUDFLARE_API_TOKEN is not set. cert-manager will be installed, but Let's Encrypt DNS-01 issuance will not succeed until the cloudflare-api-token secret exists."
-  when:
-    - install_argocd | bool
-    - cloudflare_api_token | length == 0
-
-- name: Create Gateway TLS certificate directory
-  ansible.builtin.file:
-    path: "{{ gateway_tls_remote_dir }}"
-    state: directory
+- name: Stage pinned Argo CD install resources on server
+  ansible.builtin.copy:
+    src: "{{ argocd_install_path }}/"
+    dest: "{{ argocd_remote_install_path }}/"
     owner: root
     group: root
-    mode: "0700"
+    mode: "0644"
+    directory_mode: "0755"
   when: install_argocd | bool
 
-- name: Check Gateway TLS secret
-  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ gateway_namespace }} get secret {{ gateway_tls_secret_name }}"
-  register: gateway_tls_secret
-  changed_when: false
-  failed_when: false
-  when: install_argocd | bool
-
-- name: Generate self-signed Gateway TLS certificate
-  ansible.builtin.command:
-    argv:
-      - openssl
-      - req
-      - -x509
-      - -nodes
-      - -newkey
-      - rsa:4096
-      - -keyout
-      - "{{ gateway_tls_remote_dir }}/tls.key"
-      - -out
-      - "{{ gateway_tls_remote_dir }}/tls.crt"
-      - -days
-      - "{{ gateway_tls_days | string }}"
-      - -subj
-      - "/CN={{ gateway_tls_common_name }}"
-      - -addext
-      - "subjectAltName={{ gateway_tls_subject_alt_names | join(',') }}"
-  args:
-    creates: "{{ gateway_tls_remote_dir }}/tls.crt"
-  when:
-    - install_argocd | bool
-    - gateway_tls_secret.rc != 0
-
-- name: Install temporary self-signed Gateway TLS secret
-  ansible.builtin.shell: >
-    /usr/local/bin/k3s kubectl -n {{ gateway_namespace }}
-    create secret tls {{ gateway_tls_secret_name }}
-    --cert={{ gateway_tls_remote_dir }}/tls.crt
-    --key={{ gateway_tls_remote_dir }}/tls.key
-    --dry-run=client -o yaml |
-    /usr/local/bin/k3s kubectl apply --server-side --force-conflicts -f -
-  changed_when: true
-  when:
-    - install_argocd | bool
-    - gateway_tls_secret.rc != 0
-
-- name: Configure Argo CD pod DNS resolution
-  ansible.builtin.command: >
-    /usr/local/bin/k3s kubectl -n {{ argocd_namespace }}
-    patch {{ item.kind }} {{ item.name }}
-    --type merge
-    -p '{"spec":{"template":{"spec":{"dnsConfig":{"options":[{"name":"ndots","value":"{{ argocd_dns_ndots }}"}]}}}}}'
-  loop: "{{ argocd_dns_patch_workloads }}"
+- name: Install pinned Argo CD manifests
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -n {{ argocd_namespace }} -k {{ argocd_remote_install_path }}"
   changed_when: true
   when: install_argocd | bool
 

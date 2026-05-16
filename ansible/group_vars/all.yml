@@ -1,7 +1,5 @@
 ---
-# Pin a version such as "v1.31.6+k3s1" for reproducible installs.
-# Leave empty to use the current stable version selected by the k3s installer.
-k3s_version: ""
+k3s_version: "v1.35.4+k3s1"
 
 k3s_install_url: https://get.k3s.io
 
@@ -19,12 +17,8 @@ k3s_agent_args: []
 
 install_cilium: true
 cilium_namespace: kube-system
-# Pin a version such as "1.19.3" for reproducible installs.
-# Leave empty to use the Cilium CLI default.
-cilium_version: ""
-# Pin a CLI version such as "v0.18.7" for reproducible installs.
-# Leave empty to download the current stable CLI version.
-cilium_cli_version: ""
+cilium_version: "1.19.1"
+cilium_cli_version: "v0.18.9"
 cilium_cli_stable_url: https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt
 cilium_k8s_service_host: "{{ hostvars[groups['k3s_servers'][0]].ansible_host | default(groups['k3s_servers'][0]) }}"
 cilium_k8s_service_port: 6443
@@ -50,45 +44,16 @@ gateway_api_required_crds:
   - referencegrants.gateway.networking.k8s.io
   - grpcroutes.gateway.networking.k8s.io
 
-gateway_namespace: gateway-system
-gateway_tls_secret_name: home-lab-gateway-tls
-gateway_tls_remote_dir: /etc/rancher/home-lab-gateway-tls
-gateway_tls_common_name: "*.home.rboiko.com"
-gateway_tls_subject_alt_names:
-  - DNS:home.rboiko.com
-  - DNS:*.home.rboiko.com
-gateway_tls_days: 3650
-
-cert_manager_namespace: cert-manager
-cloudflare_api_token_secret_name: cloudflare-api-token
-# Export CLOUDFLARE_API_TOKEN before running bootstrap to enable Let's Encrypt DNS-01 issuance.
-cloudflare_api_token: "{{ lookup('env', 'CLOUDFLARE_API_TOKEN') | default('', true) }}"
-
 install_argocd: true
 argocd_namespace: argocd
-argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+argocd_install_path: "{{ playbook_dir }}/../clusters/lab/bootstrap/argocd/install"
+argocd_remote_install_path: /tmp/home-lab-argocd-install
 argocd_rollout_deployments:
   - argocd-server
   - argocd-repo-server
 argocd_rollout_statefulsets:
   - argocd-application-controller
-argocd_dns_ndots: "1"
-argocd_dns_patch_workloads:
-  - kind: deployment
-    name: argocd-applicationset-controller
-  - kind: deployment
-    name: argocd-dex-server
-  - kind: deployment
-    name: argocd-notifications-controller
-  - kind: deployment
-    name: argocd-redis
-  - kind: deployment
-    name: argocd-repo-server
-  - kind: deployment
-    name: argocd-server
-  - kind: statefulset
-    name: argocd-application-controller
-argocd_bootstrap_path: "{{ playbook_dir }}/../clusters/lab/argocd/bootstrap"
+argocd_bootstrap_path: "{{ playbook_dir }}/../clusters/lab/bootstrap/argocd/seed"
 argocd_remote_bootstrap_path: /tmp/home-lab-argocd-bootstrap
 argocd_root_application_name: home-lab-cluster
 
@@ -107,6 +72,7 @@ os_base_packages:
   - apt-transport-https
   - ca-certificates
   - curl
+  - git
   - gnupg
   - iproute2
   - iptables

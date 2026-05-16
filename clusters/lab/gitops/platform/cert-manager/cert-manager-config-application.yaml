@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/roman-boiko/home-lab-cluster.git
     targetRevision: main
-    path: clusters/lab/gitops/cert-manager/config
+    path: clusters/lab/gitops/platform/cert-manager/config
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
@@ -29,4 +29,3 @@ spec:
       - ServerSideApply=true
       - PruneLast=true
       - SkipDryRunOnMissingResource=true
-
