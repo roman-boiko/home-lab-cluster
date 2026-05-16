@@ -15,6 +15,10 @@ spec:
       valuesObject:
         crds:
           enabled: true
+        podDnsConfig:
+          options:
+            - name: ndots
+              value: "1"
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
@@ -32,4 +36,3 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - PruneLast=true
-
