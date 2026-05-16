@@ -62,7 +62,7 @@ scripts/bootstrap-cluster.sh
 
 Ansible installs k3s first, joins the agent nodes, performs the first Cilium install if Cilium is missing, then applies the pinned Argo CD install overlay from `clusters/lab/bootstrap/argocd/install`. After Argo CD is running, Ansible applies only the seed resources from `clusters/lab/bootstrap/argocd/seed`.
 
-The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, Cilium, cert-manager, Longhorn, and Sealed Secrets after bootstrap.
+The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, the AppProject allowlist, Cilium, cert-manager, Longhorn, and Sealed Secrets after bootstrap.
 
 Argo CD pods include `dnsConfig.options.ndots=1` in the pinned install overlay so public Git hosts such as `github.com` resolve before the home-lab search domain.
 
