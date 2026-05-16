@@ -16,7 +16,8 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - kind: Secret
+          - group: ""
+            kind: Secret
             name: home-lab-gateway-tls
       allowedRoutes:
         namespaces:
@@ -28,7 +29,8 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - kind: Secret
+          - group: ""
+            kind: Secret
             name: home-lab-gateway-tls
       allowedRoutes:
         namespaces:
