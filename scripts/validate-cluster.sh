@@ -67,6 +67,28 @@ pass "Cilium LoadBalancer IP pool exists"
 kubectl_wait get ciliuml2announcementpolicy home-lab-l2-announcements
 pass "Cilium L2 announcement policy exists"
 
+kubectl_wait get gatewayclass cilium
+pass "Cilium GatewayClass exists"
+
+kubectl_wait -n gateway-system get secret home-lab-gateway-tls
+pass "Gateway TLS secret exists"
+
+kubectl_wait -n gateway-system get gateway public-https
+pass "HTTPS Gateway exists"
+
+gateway_ports="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.port}{" "}{end}')"
+grep -q '443' <<< "${gateway_ports}" || fail "Gateway does not expose HTTPS port 443"
+if grep -q '80' <<< "${gateway_ports}"; then
+  fail "Gateway exposes HTTP port 80; only HTTPS should be exposed"
+fi
+pass "Gateway exposes only HTTPS listener ports"
+
+gateway_protocols="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.protocol}{" "}{end}')"
+if grep -vq 'HTTPS' <<< "$(tr ' ' '\n' <<< "${gateway_protocols}" | sed '/^$/d')"; then
+  fail "Gateway has a non-HTTPS listener protocol: ${gateway_protocols}"
+fi
+pass "Gateway listener protocols are HTTPS only"
+
 cilium_config="$(kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all)"
 grep -q 'EnableL2Announcements[[:space:]]*: true' <<< "${cilium_config}"
 pass "Cilium L2 announcements are enabled"

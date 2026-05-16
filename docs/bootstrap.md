@@ -36,6 +36,10 @@ Cilium is installed during bootstrap before Argo CD. Pin `cilium_version` and `c
 
 Cilium is configured for bare-metal `LoadBalancer` services with LB IPAM and L2 announcements. The GitOps-managed IP pool is `192.168.5.100-192.168.5.200` on the `192.168.5.0/24` LAN.
 
+Cilium Gateway API is enabled during bootstrap. The shared GitOps-managed Gateway is `gateway-system/public-https`, uses address `192.168.5.100`, and exposes only HTTPS on port `443`. HTTP port `80` is intentionally not configured. Routes from any namespace may attach to this Gateway.
+
+The Gateway TLS Secret is bootstrapped by Ansible as `gateway-system/home-lab-gateway-tls` using a self-signed wildcard certificate for `*.home.rboiko.com`. Do not commit TLS private keys to Git; replace this later with cert-manager or a sealed/encrypted secret workflow.
+
 ## 3. Run Bootstrap
 
 Preview the run:

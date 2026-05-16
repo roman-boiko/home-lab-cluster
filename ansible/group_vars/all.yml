@@ -32,10 +32,32 @@ cilium_install_settings:
   - k8sServiceHost={{ cilium_k8s_service_host }}
   - k8sServicePort={{ cilium_k8s_service_port }}
   - kubeProxyReplacement=true
+  - gatewayAPI.enabled=true
   - l2announcements.enabled=true
   - k8sClientRateLimit.qps=20
   - k8sClientRateLimit.burst=40
   - operator.replicas=1
+gateway_api_crds:
+  - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml
+  - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/standard/gateway.networking.k8s.io_gateways.yaml
+  - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
+  - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/standard/gateway.networking.k8s.io_referencegrants.yaml
+  - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/standard/gateway.networking.k8s.io_grpcroutes.yaml
+gateway_api_required_crds:
+  - gatewayclasses.gateway.networking.k8s.io
+  - gateways.gateway.networking.k8s.io
+  - httproutes.gateway.networking.k8s.io
+  - referencegrants.gateway.networking.k8s.io
+  - grpcroutes.gateway.networking.k8s.io
+
+gateway_namespace: gateway-system
+gateway_tls_secret_name: home-lab-gateway-tls
+gateway_tls_remote_dir: /etc/rancher/home-lab-gateway-tls
+gateway_tls_common_name: "*.home.rboiko.com"
+gateway_tls_subject_alt_names:
+  - DNS:home.rboiko.com
+  - DNS:*.home.rboiko.com
+gateway_tls_days: 3650
 
 install_argocd: true
 argocd_namespace: argocd
@@ -84,6 +106,7 @@ os_base_packages:
   - iproute2
   - iptables
   - jq
+  - openssl
   - unattended-upgrades
 
 longhorn_required_packages:

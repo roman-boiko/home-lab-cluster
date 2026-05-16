@@ -13,6 +13,58 @@
   changed_when: true
   when: install_argocd | bool
 
+- name: Create shared Gateway namespace
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl create namespace {{ gateway_namespace }}"
+  register: gateway_namespace_create
+  changed_when: gateway_namespace_create.rc == 0
+  failed_when:
+    - gateway_namespace_create.rc != 0
+    - "'AlreadyExists' not in gateway_namespace_create.stderr"
+  when: install_argocd | bool
+
+- name: Create Gateway TLS certificate directory
+  ansible.builtin.file:
+    path: "{{ gateway_tls_remote_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: install_argocd | bool
+
+- name: Generate self-signed Gateway TLS certificate
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - req
+      - -x509
+      - -nodes
+      - -newkey
+      - rsa:4096
+      - -keyout
+      - "{{ gateway_tls_remote_dir }}/tls.key"
+      - -out
+      - "{{ gateway_tls_remote_dir }}/tls.crt"
+      - -days
+      - "{{ gateway_tls_days | string }}"
+      - -subj
+      - "/CN={{ gateway_tls_common_name }}"
+      - -addext
+      - "subjectAltName={{ gateway_tls_subject_alt_names | join(',') }}"
+  args:
+    creates: "{{ gateway_tls_remote_dir }}/tls.crt"
+  when: install_argocd | bool
+
+- name: Install Gateway TLS secret
+  ansible.builtin.shell: >
+    /usr/local/bin/k3s kubectl -n {{ gateway_namespace }}
+    create secret tls {{ gateway_tls_secret_name }}
+    --cert={{ gateway_tls_remote_dir }}/tls.crt
+    --key={{ gateway_tls_remote_dir }}/tls.key
+    --dry-run=client -o yaml |
+    /usr/local/bin/k3s kubectl apply --server-side --force-conflicts -f -
+  changed_when: true
+  when: install_argocd | bool
+
 - name: Configure Argo CD pod DNS resolution
   ansible.builtin.command: >
     /usr/local/bin/k3s kubectl -n {{ argocd_namespace }}

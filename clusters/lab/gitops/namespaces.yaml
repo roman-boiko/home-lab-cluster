@@ -4,4 +4,10 @@ metadata:
   name: home-lab-system
   labels:
     app.kubernetes.io/managed-by: argocd
-
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-system
+  labels:
+    app.kubernetes.io/managed-by: argocd

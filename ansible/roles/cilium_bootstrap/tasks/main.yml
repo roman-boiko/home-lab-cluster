@@ -25,6 +25,18 @@
     cilium_cli_effective_version: "{{ cilium_cli_version if cilium_cli_version | length > 0 else cilium_cli_stable.content | trim }}"
   when: install_cilium | bool
 
+- name: Install Gateway API CRDs for Cilium
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -f {{ item }}"
+  loop: "{{ gateway_api_crds }}"
+  changed_when: true
+  when: install_cilium | bool
+
+- name: Wait for Gateway API CRDs
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl wait --for condition=Established crd/{{ item }} --timeout=120s"
+  loop: "{{ gateway_api_required_crds }}"
+  changed_when: false
+  when: install_cilium | bool
+
 - name: Download Cilium CLI archive
   ansible.builtin.get_url:
     url: "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_effective_version }}/cilium-linux-{{ cilium_cli_arch }}.tar.gz"
@@ -71,6 +83,12 @@
 
 - name: Restart Cilium agents after config changes
   ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ cilium_namespace }} rollout restart daemonset/cilium"
+  when:
+    - install_cilium | bool
+    - cilium_install_or_upgrade.changed
+
+- name: Restart Cilium operator after config changes
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ cilium_namespace }} rollout restart deployment/cilium-operator"
   when:
     - install_cilium | bool
     - cilium_install_or_upgrade.changed
