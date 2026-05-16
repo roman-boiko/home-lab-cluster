@@ -59,6 +59,11 @@ gateway_tls_subject_alt_names:
   - DNS:*.home.rboiko.com
 gateway_tls_days: 3650
 
+cert_manager_namespace: cert-manager
+cloudflare_api_token_secret_name: cloudflare-api-token
+# Export CLOUDFLARE_API_TOKEN before running bootstrap to enable Let's Encrypt DNS-01 issuance.
+cloudflare_api_token: "{{ lookup('env', 'CLOUDFLARE_API_TOKEN') | default('', true) }}"
+
 install_argocd: true
 argocd_namespace: argocd
 argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml

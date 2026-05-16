@@ -155,6 +155,39 @@ pass "Argo CD root application is synced"
 kubectl_wait get namespace home-lab-system
 pass "GitOps-managed home-lab-system namespace exists"
 
+kubectl_wait -n argocd get application cert-manager
+pass "cert-manager Argo CD application exists"
+
+kubectl_wait -n argocd get application cert-manager-config
+pass "cert-manager config Argo CD application exists"
+
+kubectl_wait -n cert-manager rollout status deployment/cert-manager --timeout=300s
+pass "cert-manager controller is rolled out"
+
+kubectl_wait -n cert-manager rollout status deployment/cert-manager-webhook --timeout=300s
+pass "cert-manager webhook is rolled out"
+
+kubectl_wait -n cert-manager rollout status deployment/cert-manager-cainjector --timeout=300s
+pass "cert-manager cainjector is rolled out"
+
+kubectl_wait get clusterissuer letsencrypt-prod
+pass "Let's Encrypt ClusterIssuer exists"
+
+kubectl_wait -n gateway-system get certificate home-lab-gateway
+pass "Gateway wildcard Certificate exists"
+
+certificate_dns_names="$(kubectl -n gateway-system get certificate home-lab-gateway -o jsonpath='{.spec.dnsNames[*]}')"
+grep -q '\*.home.rboiko.com' <<< "${certificate_dns_names}" || fail "Gateway certificate does not include wildcard DNS name"
+pass "Gateway certificate includes wildcard DNS name"
+
+if kubectl -n cert-manager get secret cloudflare-api-token >/dev/null 2>&1; then
+  certificate_ready="$(kubectl -n gateway-system get certificate home-lab-gateway -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}')"
+  [[ "${certificate_ready}" == "True" ]] || fail "Gateway certificate is not Ready"
+  pass "Gateway Let's Encrypt certificate is Ready"
+else
+  info "Cloudflare API token secret is missing; skipped certificate Ready check"
+fi
+
 ansible -i "${INVENTORY}" k3s_cluster -b -m command -a 'systemctl is-active iscsid' >/dev/null
 pass "iscsid is active on all nodes"
 

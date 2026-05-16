@@ -7,6 +7,7 @@ spec:
   description: Home lab cluster configuration managed from Git
   sourceRepos:
     - https://github.com/roman-boiko/home-lab-cluster.git
+    - https://charts.jetstack.io
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc
@@ -16,4 +17,3 @@ spec:
   namespaceResourceWhitelist:
     - group: "*"
       kind: "*"
-

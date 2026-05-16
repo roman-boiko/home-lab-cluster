@@ -40,6 +40,8 @@ Cilium Gateway API is enabled during bootstrap. The shared GitOps-managed Gatewa
 
 The Gateway TLS Secret is bootstrapped by Ansible as `gateway-system/home-lab-gateway-tls` using a self-signed wildcard certificate for `*.home.rboiko.com`. Do not commit TLS private keys to Git; replace this later with cert-manager or a sealed/encrypted secret workflow.
 
+cert-manager is installed by Argo CD from the Jetstack Helm chart. The production `ClusterIssuer` uses Let's Encrypt DNS-01 with Cloudflare and requests `home.rboiko.com` plus `*.home.rboiko.com` into the Gateway TLS Secret. Export `CLOUDFLARE_API_TOKEN` before running `scripts/bootstrap-cluster.sh`; Ansible will create `cert-manager/cloudflare-api-token` outside Git. The token needs permission to edit DNS records for the `rboiko.com` zone.
+
 ## 3. Run Bootstrap
 
 Preview the run:
