@@ -39,6 +39,24 @@ argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/m
 argocd_rollout_deployments:
   - argocd-server
   - argocd-repo-server
+argocd_rollout_statefulsets:
+  - argocd-application-controller
+argocd_dns_ndots: "1"
+argocd_dns_patch_workloads:
+  - kind: deployment
+    name: argocd-applicationset-controller
+  - kind: deployment
+    name: argocd-dex-server
+  - kind: deployment
+    name: argocd-notifications-controller
+  - kind: deployment
+    name: argocd-redis
+  - kind: deployment
+    name: argocd-repo-server
+  - kind: deployment
+    name: argocd-server
+  - kind: statefulset
+    name: argocd-application-controller
 argocd_bootstrap_path: "{{ playbook_dir }}/../clusters/lab/argocd/bootstrap"
 argocd_remote_bootstrap_path: /tmp/home-lab-argocd-bootstrap
 argocd_root_application_name: home-lab-cluster

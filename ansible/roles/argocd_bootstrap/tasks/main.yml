@@ -13,9 +13,25 @@
   changed_when: true
   when: install_argocd | bool
 
+- name: Configure Argo CD pod DNS resolution
+  ansible.builtin.command: >
+    /usr/local/bin/k3s kubectl -n {{ argocd_namespace }}
+    patch {{ item.kind }} {{ item.name }}
+    --type merge
+    -p '{"spec":{"template":{"spec":{"dnsConfig":{"options":[{"name":"ndots","value":"{{ argocd_dns_ndots }}"}]}}}}}'
+  loop: "{{ argocd_dns_patch_workloads }}"
+  changed_when: true
+  when: install_argocd | bool
+
 - name: Wait for core Argo CD deployments
   ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} rollout status deployment/{{ item }} --timeout=300s"
   loop: "{{ argocd_rollout_deployments }}"
+  changed_when: false
+  when: install_argocd | bool
+
+- name: Wait for core Argo CD statefulsets
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} rollout status statefulset/{{ item }} --timeout=300s"
+  loop: "{{ argocd_rollout_statefulsets }}"
   changed_when: false
   when: install_argocd | bool
 
@@ -44,7 +60,7 @@
   when: install_argocd | bool
 
 - name: Trigger initial root application sync
-  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} patch application {{ argocd_root_application_name }} --type merge -p '{\"operation\":{\"sync\":{\"prune\":true,\"syncOptions\":{\"items\":[\"ServerSideApply=true\",\"PruneLast=true\"]}}}}'"
+  ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} patch application {{ argocd_root_application_name }} --type merge -p '{\"operation\":{\"sync\":{\"prune\":true,\"syncOptions\":[\"ServerSideApply=true\",\"PruneLast=true\"]}}}'"
   changed_when: true
   failed_when: false
   when: install_argocd | bool

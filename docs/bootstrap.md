@@ -52,6 +52,8 @@ Ansible installs k3s first, joins the agent nodes, installs Cilium networking, t
 
 The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`.
 
+Argo CD pods are patched with `dnsConfig.options.ndots=1` during bootstrap so public Git hosts such as `github.com` resolve before the home-lab search domain.
+
 The playbook also downloads the kubeconfig to `kubeconfig/lab-k3s.yaml` on the local machine and rewrites the API endpoint to the k3s server IP. This file is ignored by Git because it contains cluster credentials.
 
 ## 4. Post-Bootstrap Rule
