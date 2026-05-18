@@ -175,6 +175,25 @@ pass "Argo CD server is rolled out"
 kubectl_wait -n argocd rollout status deployment/argocd-repo-server --timeout=300s
 pass "Argo CD repo server is rolled out"
 
+argocd_gateway_scope="$(kubectl get namespace argocd -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${argocd_gateway_scope}" == "private" ]] || fail "argocd namespace Gateway scope is ${argocd_gateway_scope:-unset}, expected private"
+pass "Argo CD namespace is scoped to the private Gateway"
+
+argocd_server_insecure="$(kubectl -n argocd get configmap argocd-cmd-params-cm -o jsonpath='{.data.server\.insecure}')"
+[[ "${argocd_server_insecure}" == "true" ]] || fail "Argo CD server.insecure is ${argocd_server_insecure:-unset}, expected true"
+pass "Argo CD server is configured for Gateway TLS termination"
+
+kubectl_wait -n argocd get httproute argocd
+pass "Argo CD private HTTPRoute exists"
+
+argocd_route_parent="$(kubectl -n argocd get httproute argocd -o jsonpath='{.spec.parentRefs[0].name}')"
+[[ "${argocd_route_parent}" == "private-https" ]] || fail "Argo CD HTTPRoute parent is ${argocd_route_parent:-unset}, expected private-https"
+pass "Argo CD HTTPRoute attaches to the private Gateway"
+
+argocd_route_hostname="$(kubectl -n argocd get httproute argocd -o jsonpath='{.spec.hostnames[0]}')"
+[[ "${argocd_route_hostname}" == "argocd.home.rboiko.com" ]] || fail "Argo CD HTTPRoute hostname is ${argocd_route_hostname:-unset}"
+pass "Argo CD HTTPRoute uses argocd.home.rboiko.com"
+
 kubectl_wait -n argocd get application home-lab-cluster
 pass "Argo CD root application exists"
 

@@ -47,6 +47,9 @@ Both Gateways expose HTTPS on port `443` and expose HTTP on port `80` only for `
 Only forward router traffic or Cloudflare Tunnel traffic to `192.168.5.100`. Do not forward internet traffic to `192.168.5.101`. Use local DNS for private
 names such as `argocd.home.rboiko.com`, `longhorn.home.rboiko.com`, and `hubble.home.rboiko.com` so they resolve to `192.168.5.101` only on the LAN.
 
+Argo CD is exposed only through the private Gateway at `argocd.home.rboiko.com`. The Gateway terminates TLS with the shared wildcard certificate and forwards
+plain HTTP to `argocd-server` on port `80`; Argo CD authentication remains enabled.
+
 Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
 The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls` and is used by both Gateways. Ansible does not create temporary TLS material.
