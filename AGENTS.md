@@ -18,7 +18,11 @@ Avoid committing generated files, local machine artifacts, or secrets.
 
 Use Ansible only for bootstrap: OS preparation, initial k3s installation, first Cilium networking install, kubeconfig download, pinned Argo CD install, and the root Argo CD seed. After Argo CD is running, manage all platform and application changes through Git under `clusters/lab/gitops`.
 
-The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Cilium, cert-manager, Longhorn, Sealed Secrets, and the shared Gateway. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
+The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Cilium, cert-manager, Longhorn, Sealed Secrets, and the public/private Gateway split. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
+
+Expose internet-facing services through `gateway-system/public-https` at `192.168.5.100`. Keep administrative or LAN-only services on
+`gateway-system/private-https` at `192.168.5.101`; do not forward this address from the router. Namespace labels control route attachment:
+use `home-lab.rboiko.com/gateway-scope=public` or `home-lab.rboiko.com/gateway-scope=private`.
 
 ## Build, Test, and Development Commands
 

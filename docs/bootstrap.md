@@ -36,11 +36,20 @@ Cilium is installed once during bootstrap before Argo CD because the cluster nee
 
 Cilium is configured for bare-metal `LoadBalancer` services with LB IPAM and L2 announcements. The GitOps-managed IP pool is `192.168.5.100-192.168.5.200` on the `192.168.5.0/24` LAN.
 
-Cilium Gateway API is enabled during bootstrap. The shared GitOps-managed Gateway is `gateway-system/public-https`, uses address `192.168.5.100`, exposes HTTPS on port `443`, and exposes HTTP on port `80` only for `301` redirects to HTTPS. Backend routes from any namespace may attach to the HTTPS listeners.
+Cilium Gateway API is enabled during bootstrap. GitOps manages two Cilium Gateways:
+
+- `gateway-system/public-https` uses `192.168.5.100` for internet-facing services.
+- `gateway-system/private-https` uses `192.168.5.101` for LAN-only administrative services.
+
+Both Gateways expose HTTPS on port `443` and expose HTTP on port `80` only for `301` redirects to HTTPS. Public routes must live in namespaces labeled
+`home-lab.rboiko.com/gateway-scope=public`; private routes must live in namespaces labeled `home-lab.rboiko.com/gateway-scope=private`.
+
+Only forward router traffic or Cloudflare Tunnel traffic to `192.168.5.100`. Do not forward internet traffic to `192.168.5.101`. Use local DNS for private
+names such as `argocd.home.rboiko.com`, `longhorn.home.rboiko.com`, and `hubble.home.rboiko.com` so they resolve to `192.168.5.101` only on the LAN.
 
 Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
-The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls`. Ansible does not create temporary TLS material.
+The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls` and is used by both Gateways. Ansible does not create temporary TLS material.
 
 cert-manager is installed by Argo CD from the Jetstack Helm chart. The production `ClusterIssuer` uses Let's Encrypt DNS-01 with Cloudflare and requests `home.rboiko.com` plus `*.home.rboiko.com` into the Gateway TLS Secret. The token must exist as `cert-manager/cloudflare-api-token`; manage it with Sealed Secrets or another encrypted GitOps workflow, not a plaintext manifest.
 

@@ -73,29 +73,59 @@ pass "Cilium GatewayClass exists"
 kubectl_wait -n gateway-system get secret home-lab-gateway-tls
 pass "Gateway TLS secret exists"
 
-kubectl_wait -n gateway-system get gateway public-https
-pass "HTTPS Gateway exists"
+validate_gateway() {
+  local gateway_name="$1"
+  local expected_ip="$2"
+  local expected_scope="$3"
 
-gateway_ports="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.port}{" "}{end}')"
-grep -q '443' <<< "${gateway_ports}" || fail "Gateway does not expose HTTPS port 443"
-grep -q '80' <<< "${gateway_ports}" || fail "Gateway does not expose HTTP port 80 for redirects"
-pass "Gateway exposes HTTPS and HTTP redirect listener ports"
+  kubectl_wait -n gateway-system get gateway "${gateway_name}"
+  pass "${gateway_name} Gateway exists"
 
-gateway_protocols="$(kubectl -n gateway-system get gateway public-https -o jsonpath='{range .spec.listeners[*]}{.protocol}{" "}{end}')"
-grep -q 'HTTPS' <<< "${gateway_protocols}" || fail "Gateway has no HTTPS listener"
-grep -q 'HTTP' <<< "${gateway_protocols}" || fail "Gateway has no HTTP redirect listener"
-pass "Gateway listener protocols include HTTPS and HTTP redirect"
+  local gateway_ip
+  gateway_ip="$(kubectl -n gateway-system get gateway "${gateway_name}" -o jsonpath='{.spec.addresses[0].value}')"
+  [[ "${gateway_ip}" == "${expected_ip}" ]] || fail "${gateway_name} Gateway address is ${gateway_ip}, expected ${expected_ip}"
+  pass "${gateway_name} Gateway uses ${expected_ip}"
 
-kubectl_wait -n gateway-system get httproute http-to-https-redirect
-pass "HTTP to HTTPS redirect route exists"
+  local gateway_ports
+  gateway_ports="$(kubectl -n gateway-system get gateway "${gateway_name}" -o jsonpath='{range .spec.listeners[*]}{.port}{" "}{end}')"
+  grep -q '443' <<< "${gateway_ports}" || fail "${gateway_name} Gateway does not expose HTTPS port 443"
+  grep -q '80' <<< "${gateway_ports}" || fail "${gateway_name} Gateway does not expose HTTP port 80 for redirects"
+  pass "${gateway_name} Gateway exposes HTTPS and HTTP redirect listener ports"
 
-redirect_scheme="$(kubectl -n gateway-system get httproute http-to-https-redirect -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.scheme}')"
-[[ "${redirect_scheme}" == "https" ]] || fail "Redirect route scheme is ${redirect_scheme}, expected https"
-pass "HTTP redirect route targets HTTPS"
+  local gateway_protocols
+  gateway_protocols="$(kubectl -n gateway-system get gateway "${gateway_name}" -o jsonpath='{range .spec.listeners[*]}{.protocol}{" "}{end}')"
+  grep -q 'HTTPS' <<< "${gateway_protocols}" || fail "${gateway_name} Gateway has no HTTPS listener"
+  grep -q 'HTTP' <<< "${gateway_protocols}" || fail "${gateway_name} Gateway has no HTTP redirect listener"
+  pass "${gateway_name} Gateway listener protocols include HTTPS and HTTP redirect"
 
-redirect_status="$(kubectl -n gateway-system get httproute http-to-https-redirect -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.statusCode}')"
-[[ "${redirect_status}" == "301" ]] || fail "Redirect route status is ${redirect_status}, expected 301"
-pass "HTTP redirect route uses 301"
+  local gateway_route_scope
+  gateway_route_scope="$(kubectl -n gateway-system get gateway "${gateway_name}" -o yaml)"
+  grep -q "home-lab.rboiko.com/gateway-scope: ${expected_scope}" <<< "${gateway_route_scope}" \
+    || fail "${gateway_name} HTTPS route scope is not restricted to ${expected_scope} namespaces"
+  pass "${gateway_name} Gateway restricts HTTPS routes to ${expected_scope} namespaces"
+}
+
+validate_redirect_route() {
+  local route_name="$1"
+
+  kubectl_wait -n gateway-system get httproute "${route_name}"
+  pass "${route_name} HTTP to HTTPS redirect route exists"
+
+  local redirect_scheme
+  redirect_scheme="$(kubectl -n gateway-system get httproute "${route_name}" -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.scheme}')"
+  [[ "${redirect_scheme}" == "https" ]] || fail "${route_name} redirect route scheme is ${redirect_scheme}, expected https"
+  pass "${route_name} HTTP redirect route targets HTTPS"
+
+  local redirect_status
+  redirect_status="$(kubectl -n gateway-system get httproute "${route_name}" -o jsonpath='{.spec.rules[0].filters[0].requestRedirect.statusCode}')"
+  [[ "${redirect_status}" == "301" ]] || fail "${route_name} redirect route status is ${redirect_status}, expected 301"
+  pass "${route_name} HTTP redirect route uses 301"
+}
+
+validate_gateway public-https 192.168.5.100 public
+validate_gateway private-https 192.168.5.101 private
+validate_redirect_route public-http-to-https-redirect
+validate_redirect_route private-http-to-https-redirect
 
 cilium_config="$(kubectl -n kube-system exec ds/cilium -- cilium-dbg config --all)"
 grep -q 'EnableL2Announcements[[:space:]]*: true' <<< "${cilium_config}"

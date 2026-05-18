@@ -1,16 +1,26 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: public-https
+  name: private-https
   namespace: gateway-system
 spec:
   gatewayClassName: cilium
   addresses:
     - type: IPAddress
-      value: 192.168.5.100
+      value: 192.168.5.101
   listeners:
     - name: http-redirect
       hostname: "*.home.rboiko.com"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        kinds:
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
+        namespaces:
+          from: Same
+    - name: http-root-redirect
+      hostname: home.rboiko.com
       port: 80
       protocol: HTTP
       allowedRoutes:
@@ -31,17 +41,10 @@ spec:
             name: home-lab-gateway-tls
       allowedRoutes:
         namespaces:
-          from: All
-    - name: http-root-redirect
-      hostname: home.rboiko.com
-      port: 80
-      protocol: HTTP
-      allowedRoutes:
-        kinds:
-          - group: gateway.networking.k8s.io
-            kind: HTTPRoute
-        namespaces:
-          from: Same
+          from: Selector
+          selector:
+            matchLabels:
+              home-lab.rboiko.com/gateway-scope: private
     - name: https-root
       hostname: home.rboiko.com
       port: 443
@@ -54,4 +57,7 @@ spec:
             name: home-lab-gateway-tls
       allowedRoutes:
         namespaces:
-          from: All
+          from: Selector
+          selector:
+            matchLabels:
+              home-lab.rboiko.com/gateway-scope: private
