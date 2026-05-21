@@ -21,5 +21,6 @@ spec:
         - group: ""
           kind: Service
           name: longhorn-frontend
+          namespace: longhorn-system
           port: 80
           weight: 1
