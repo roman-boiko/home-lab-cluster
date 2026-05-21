@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - local-path-storageclass.yaml
   - longhorn-application.yaml
+  - longhorn-route.yaml

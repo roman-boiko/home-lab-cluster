@@ -122,6 +122,41 @@ validate_redirect_route() {
   pass "${route_name} HTTP redirect route uses 301"
 }
 
+validate_private_route() {
+  local namespace="$1"
+  local route_name="$2"
+  local expected_hostname="$3"
+  local expected_backend="$4"
+
+  kubectl_wait -n "${namespace}" get httproute "${route_name}"
+  pass "${namespace}/${route_name} private HTTPRoute exists"
+
+  local route_parent
+  route_parent="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.parentRefs[0].name}')"
+  [[ "${route_parent}" == "private-https" ]] || fail "${namespace}/${route_name} parent is ${route_parent:-unset}, expected private-https"
+  pass "${namespace}/${route_name} attaches to the private Gateway"
+
+  local route_hostname
+  route_hostname="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.hostnames[0]}')"
+  [[ "${route_hostname}" == "${expected_hostname}" ]] || fail "${namespace}/${route_name} hostname is ${route_hostname:-unset}"
+  pass "${namespace}/${route_name} uses ${expected_hostname}"
+
+  local route_backend
+  route_backend="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.rules[0].backendRefs[0].name}')"
+  [[ "${route_backend}" == "${expected_backend}" ]] || fail "${namespace}/${route_name} backend is ${route_backend:-unset}, expected ${expected_backend}"
+  pass "${namespace}/${route_name} routes to ${expected_backend}"
+
+  local route_accepted
+  route_accepted="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{range .status.parents[*].conditions[?(@.type=="Accepted")]}{.status}{end}')"
+  [[ "${route_accepted}" == *True* ]] || fail "${namespace}/${route_name} is not accepted by the Gateway"
+  pass "${namespace}/${route_name} is accepted by the Gateway"
+
+  local route_refs
+  route_refs="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{range .status.parents[*].conditions[?(@.type=="ResolvedRefs")]}{.status}{end}')"
+  [[ "${route_refs}" == *True* ]] || fail "${namespace}/${route_name} backend references are not resolved"
+  pass "${namespace}/${route_name} backend references are resolved"
+}
+
 validate_gateway public-https 192.168.5.100 public
 validate_gateway private-https 192.168.5.101 private
 validate_redirect_route public-http-to-https-redirect
@@ -224,6 +259,21 @@ cilium_app_sync_status="$(kubectl -n argocd get application cilium -o jsonpath='
 [[ "${cilium_app_sync_status}" == "Synced" ]] || fail "Cilium Argo CD application is ${cilium_app_sync_status:-unknown}, expected Synced"
 pass "Cilium Argo CD application is synced"
 
+kube_system_gateway_scope="$(kubectl get namespace kube-system -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${kube_system_gateway_scope}" == "private" ]] || fail "kube-system namespace Gateway scope is ${kube_system_gateway_scope:-unset}, expected private"
+pass "kube-system namespace is scoped to the private Gateway"
+
+kubectl_wait -n kube-system rollout status deployment/hubble-relay --timeout=300s
+pass "Hubble Relay is rolled out"
+
+kubectl_wait -n kube-system rollout status deployment/hubble-ui --timeout=300s
+pass "Hubble UI is rolled out"
+
+kubectl_wait -n kube-system get service hubble-ui
+pass "Hubble UI service exists"
+
+validate_private_route kube-system hubble-ui hubble.home.rboiko.com hubble-ui
+
 kubectl_wait -n argocd get application cert-manager
 pass "cert-manager Argo CD application exists"
 
@@ -272,6 +322,12 @@ pass "Longhorn driver deployer is rolled out"
 
 kubectl_wait -n longhorn-system rollout status deployment/longhorn-ui --timeout=300s
 pass "Longhorn UI is rolled out"
+
+longhorn_gateway_scope="$(kubectl get namespace longhorn-system -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${longhorn_gateway_scope}" == "private" ]] || fail "longhorn-system namespace Gateway scope is ${longhorn_gateway_scope:-unset}, expected private"
+pass "Longhorn namespace is scoped to the private Gateway"
+
+validate_private_route longhorn-system longhorn longhorn.home.rboiko.com longhorn-frontend
 
 kubectl_wait get storageclass longhorn
 pass "Longhorn StorageClass exists"

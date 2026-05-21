@@ -50,6 +50,13 @@ names such as `argocd.home.rboiko.com`, `longhorn.home.rboiko.com`, and `hubble.
 Argo CD is exposed only through the private Gateway at `argocd.home.rboiko.com`. The Gateway terminates TLS with the shared wildcard certificate and forwards
 plain HTTP to `argocd-server` on port `80`; Argo CD authentication remains enabled.
 
+Longhorn and Hubble UI are also exposed only through the private Gateway:
+
+- `longhorn.home.rboiko.com` routes to `longhorn-system/longhorn-frontend`.
+- `hubble.home.rboiko.com` routes to `kube-system/hubble-ui`.
+
+Keep these names in LAN DNS only and do not forward `192.168.5.101` from the router.
+
 Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
 The Gateway TLS Secret is owned by cert-manager through GitOps as `gateway-system/home-lab-gateway-tls` and is used by both Gateways. Ansible does not create temporary TLS material.
