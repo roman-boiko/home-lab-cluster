@@ -17,6 +17,19 @@ patches:
         server.insecure: "true"
   - target:
       kind: Deployment
+      name: argocd-server
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: argocd-server
+      spec:
+        template:
+          metadata:
+            annotations:
+              home-lab.rboiko.com/config-revision: "server-insecure-v1"
+  - target:
+      kind: Deployment
       labelSelector: app.kubernetes.io/part-of=argocd
     patch: |-
       - op: add
