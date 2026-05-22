@@ -20,7 +20,8 @@
 
 - name: Install pinned Argo CD manifests
   ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -n {{ argocd_namespace }} -k {{ argocd_remote_install_path }}"
-  changed_when: true
+  register: argocd_install_apply
+  changed_when: argocd_install_apply.stdout is search('(created|configured)$', multiline=True)
   when: install_argocd | bool
 
 - name: Wait for core Argo CD deployments
@@ -47,7 +48,8 @@
 
 - name: Apply Argo CD GitOps bootstrap resources
   ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -k {{ argocd_remote_bootstrap_path }}"
-  changed_when: true
+  register: argocd_bootstrap_apply
+  changed_when: argocd_bootstrap_apply.stdout is search('(created|configured)$', multiline=True)
   when: install_argocd | bool
 
 - name: Wait for Argo CD root application to exist
@@ -61,6 +63,9 @@
 
 - name: Trigger initial root application sync
   ansible.builtin.command: "/usr/local/bin/k3s kubectl -n {{ argocd_namespace }} patch application {{ argocd_root_application_name }} --type merge -p '{\"operation\":{\"sync\":{\"prune\":true,\"syncOptions\":[\"ServerSideApply=true\",\"PruneLast=true\"]}}}'"
-  changed_when: true
+  register: argocd_sync_trigger
+  changed_when:
+    - argocd_sync_trigger.rc == 0
+    - "'(no change)' not in argocd_sync_trigger.stdout"
   failed_when: false
   when: install_argocd | bool

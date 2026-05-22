@@ -81,11 +81,6 @@
     masked: true
   failed_when: false
 
-- name: Disable active swap after Raspberry Pi swap config
-  ansible.builtin.command: swapoff -a
-  changed_when: true
-  failed_when: false
-
 - name: Disable Raspberry Pi swap service if present
   ansible.builtin.systemd:
     name: dphys-swapfile

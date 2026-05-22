@@ -28,7 +28,8 @@
 - name: Install Gateway API CRDs for Cilium
   ansible.builtin.command: "/usr/local/bin/k3s kubectl apply --server-side --force-conflicts -f {{ item }}"
   loop: "{{ gateway_api_crds }}"
-  changed_when: true
+  register: gateway_api_crd_apply
+  changed_when: gateway_api_crd_apply.stdout is search('(created|configured)$', multiline=True)
   when: install_cilium | bool
 
 - name: Wait for Gateway API CRDs
