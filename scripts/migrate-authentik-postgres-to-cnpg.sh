@@ -106,7 +106,7 @@ kubectl -n "${NAMESPACE}" exec "${old_pod}" -c postgresql -- \
 printf 'Restoring database into CloudNativePG pod %s.\n' "${new_pod}"
 kubectl -n "${NAMESPACE}" exec -i "${new_pod}" -c postgres -- \
   env "PGPASSWORD=${postgres_password}" \
-  pg_restore -U "${DB_USER}" -d "${DATABASE}" \
+  pg_restore -h 127.0.0.1 -U "${DB_USER}" -d "${DATABASE}" \
   --clean \
   --if-exists \
   --no-owner \

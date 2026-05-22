@@ -15,30 +15,18 @@ spec:
       valuesObject:
         global:
           podAnnotations:
-            home-lab.rboiko.com/authentik-secret-revision: "v2"
+            home-lab.rboiko.com/authentik-secret-revision: "v3"
         authentik:
           existingSecret:
             secretName: authentik-secrets
           error_reporting:
             enabled: false
           postgresql:
-            host: authentik-postgresql
+            host: authentik-postgres-rw
             name: authentik
             user: authentik
         postgresql:
-          enabled: true
-          auth:
-            username: authentik
-            database: authentik
-            existingSecret: authentik-secrets
-            secretKeys:
-              adminPasswordKey: postgres-password
-              userPasswordKey: password
-          primary:
-            persistence:
-              enabled: true
-              storageClass: longhorn
-              size: 8Gi
+          enabled: false
         server:
           replicas: 1
           route:

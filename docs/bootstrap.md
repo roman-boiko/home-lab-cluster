@@ -58,7 +58,8 @@ Longhorn and Hubble UI are also exposed only through the private Gateway:
 
 Keep these names in LAN DNS only and do not forward `192.168.5.101` from the router.
 
-Authentik is installed by Argo CD from the official Authentik Helm chart with bundled PostgreSQL on Longhorn storage. Before syncing Authentik for the first
+Authentik is installed by Argo CD from the official Authentik Helm chart. Its PostgreSQL database is managed separately by CloudNativePG as
+`authentik/authentik-postgres` on Longhorn storage; Authentik connects through the `authentik-postgres-rw` service. Before syncing Authentik for the first
 time, create the live runtime secret:
 
 ```bash
@@ -67,6 +68,9 @@ scripts/create-authentik-secret.sh
 
 The Authentik server includes the embedded proxy outpost. Use that outpost for initial proxy providers, then add Kubernetes-managed outposts later if separate
 outpost deployments are needed for scale or isolation.
+
+CloudNativePG is installed by Argo CD from the official CloudNativePG Helm chart. Use `scripts/migrate-authentik-postgres-to-cnpg.sh` only for the one-time
+migration from the old bundled Authentik PostgreSQL StatefulSet to the CloudNativePG cluster.
 
 Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
@@ -92,7 +96,7 @@ scripts/bootstrap-cluster.sh
 
 Ansible installs k3s first, joins the agent nodes, performs the first Cilium install if Cilium is missing, then applies the pinned Argo CD install overlay from `clusters/lab/bootstrap/argocd/install`. After Argo CD is running, Ansible applies only the seed resources from `clusters/lab/bootstrap/argocd/seed`.
 
-The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, the AppProject allowlist, Cilium, cert-manager, Longhorn, and Sealed Secrets after bootstrap.
+The root Argo CD application is `home-lab-cluster`. It tracks this repository at `clusters/lab/gitops` and automatically reconciles changes from `main`. Child applications then self-manage Argo CD, the AppProject allowlist, Authentik, CloudNativePG, Cilium, cert-manager, Longhorn, and Sealed Secrets after bootstrap.
 
 Argo CD pods include `dnsConfig.options.ndots=1` in the pinned install overlay so public Git hosts such as `github.com` resolve before the home-lab search domain.
 
@@ -116,4 +120,4 @@ Run the post-install validation script from the repository root:
 scripts/validate-cluster.sh
 ```
 
-The script checks Kubernetes API access, four Ready nodes, Cilium rollout, disabled k3s Flannel/ServiceLB/Traefik/network-policy components, Argo CD and child applications, cert-manager, Sealed Secrets, Longhorn rollout and default StorageClass, Longhorn host prerequisites, unattended upgrades, and disabled swap.
+The script checks Kubernetes API access, four Ready nodes, Cilium rollout, disabled k3s Flannel/ServiceLB/Traefik/network-policy components, Argo CD and child applications, Authentik, CloudNativePG, cert-manager, Sealed Secrets, Longhorn rollout and default StorageClass, Longhorn host prerequisites, unattended upgrades, and disabled swap.

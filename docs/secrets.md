@@ -44,6 +44,7 @@ This creates `authentik/authentik-secrets` with:
 - `AUTHENTIK_POSTGRESQL__USER`
 - `AUTHENTIK_POSTGRESQL__PORT`
 - `AUTHENTIK_POSTGRESQL__PASSWORD`
+- `username`
 - `password`
 - `postgres-password`
 

@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KUBECONFIG_PATH="${KUBECONFIG:-${ROOT_DIR}/kubeconfig/lab-k3s.yaml}"
 NAMESPACE="${AUTHENTIK_NAMESPACE:-authentik}"
 SECRET_NAME="${AUTHENTIK_SECRET_NAME:-authentik-secrets}"
-POSTGRES_HOST="${AUTHENTIK_POSTGRES_HOST:-authentik-postgresql}"
+POSTGRES_HOST="${AUTHENTIK_POSTGRES_HOST:-authentik-postgres-rw}"
 POSTGRES_NAME="${AUTHENTIK_POSTGRES_NAME:-authentik}"
 POSTGRES_USER="${AUTHENTIK_POSTGRES_USER:-authentik}"
 POSTGRES_PORT="${AUTHENTIK_POSTGRES_PORT:-5432}"
@@ -38,6 +38,7 @@ if kubectl -n "${NAMESPACE}" get secret "${SECRET_NAME}" >/dev/null 2>&1; then
   patch_secret_key AUTHENTIK_POSTGRESQL__NAME "${POSTGRES_NAME}"
   patch_secret_key AUTHENTIK_POSTGRESQL__USER "${POSTGRES_USER}"
   patch_secret_key AUTHENTIK_POSTGRESQL__PORT "${POSTGRES_PORT}"
+  patch_secret_key username "${POSTGRES_USER}"
   printf 'Updated non-secret PostgreSQL settings in %s/%s without rotating credentials.\n' "${NAMESPACE}" "${SECRET_NAME}"
   exit 0
 fi
@@ -55,6 +56,7 @@ kubectl -n "${NAMESPACE}" create secret generic "${SECRET_NAME}" \
   --from-literal=AUTHENTIK_POSTGRESQL__USER="${POSTGRES_USER}" \
   --from-literal=AUTHENTIK_POSTGRESQL__PORT="${POSTGRES_PORT}" \
   --from-literal=AUTHENTIK_POSTGRESQL__PASSWORD="${postgres_password}" \
+  --from-literal=username="${POSTGRES_USER}" \
   --from-literal=password="${postgres_password}" \
   --from-literal=postgres-password="${postgres_admin_password}" \
   --dry-run=client \

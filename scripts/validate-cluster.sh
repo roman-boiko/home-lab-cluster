@@ -252,6 +252,16 @@ pass "Sealed Secrets Argo CD application exists"
 kubectl_wait -n sealed-secrets rollout status deployment/sealed-secrets-controller --timeout=300s
 pass "Sealed Secrets controller is rolled out"
 
+kubectl_wait -n argocd get application cloudnative-pg
+pass "CloudNativePG Argo CD application exists"
+
+cloudnative_pg_app_sync_status="$(kubectl -n argocd get application cloudnative-pg -o jsonpath='{.status.sync.status}')"
+[[ "${cloudnative_pg_app_sync_status}" == "Synced" ]] || fail "CloudNativePG Argo CD application is ${cloudnative_pg_app_sync_status:-unknown}, expected Synced"
+pass "CloudNativePG Argo CD application is synced"
+
+kubectl_wait -n cnpg-system rollout status deployment/cloudnative-pg --timeout=300s
+pass "CloudNativePG operator is rolled out"
+
 kubectl_wait -n argocd get application authentik
 pass "Authentik Argo CD application exists"
 
@@ -273,6 +283,7 @@ for key in \
   AUTHENTIK_POSTGRESQL__USER \
   AUTHENTIK_POSTGRESQL__PORT \
   AUTHENTIK_POSTGRESQL__PASSWORD \
+  username \
   password \
   postgres-password; do
   kubectl -n authentik get secret authentik-secrets -o "jsonpath={.data.${key}}" | grep -q . \
@@ -280,8 +291,25 @@ for key in \
 done
 pass "Authentik runtime secret contains required keys"
 
-kubectl_wait -n authentik rollout status statefulset/authentik-postgresql --timeout=300s
-pass "Authentik PostgreSQL is rolled out"
+authentik_postgres_host="$(kubectl -n authentik get secret authentik-secrets -o jsonpath='{.data.AUTHENTIK_POSTGRESQL__HOST}')"
+expected_authentik_postgres_host="$(printf '%s' authentik-postgres-rw | base64 | tr -d '\n')"
+[[ "${authentik_postgres_host}" == "${expected_authentik_postgres_host}" ]] \
+  || fail "Authentik PostgreSQL host does not point to authentik-postgres-rw"
+pass "Authentik runtime secret points to CloudNativePG"
+
+kubectl_wait -n argocd get application authentik-postgres
+pass "Authentik PostgreSQL Argo CD application exists"
+
+authentik_postgres_app_sync_status="$(kubectl -n argocd get application authentik-postgres -o jsonpath='{.status.sync.status}')"
+[[ "${authentik_postgres_app_sync_status}" == "Synced" ]] || fail "Authentik PostgreSQL Argo CD application is ${authentik_postgres_app_sync_status:-unknown}, expected Synced"
+pass "Authentik PostgreSQL Argo CD application is synced"
+
+authentik_postgres_ready="$(kubectl -n authentik get cluster.postgresql.cnpg.io authentik-postgres -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}')"
+[[ "${authentik_postgres_ready}" == "True" ]] || fail "Authentik CloudNativePG cluster is not Ready"
+pass "Authentik CloudNativePG cluster is Ready"
+
+kubectl_wait -n authentik get service authentik-postgres-rw
+pass "Authentik CloudNativePG read-write service exists"
 
 kubectl_wait -n authentik rollout status deployment/authentik-server --timeout=300s
 pass "Authentik server is rolled out"
