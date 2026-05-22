@@ -17,6 +17,10 @@ spec:
           create: true
         monitoring:
           podMonitorEnabled: false
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system

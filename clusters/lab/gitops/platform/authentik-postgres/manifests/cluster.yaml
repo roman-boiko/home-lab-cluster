@@ -15,5 +15,9 @@ spec:
   storage:
     storageClass: longhorn
     size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
   monitoring:
     enablePodMonitor: false
