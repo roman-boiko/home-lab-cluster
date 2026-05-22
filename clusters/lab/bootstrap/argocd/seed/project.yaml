@@ -12,6 +12,7 @@ spec:
     - https://helm.cilium.io
     - https://charts.longhorn.io
     - https://charts.goauthentik.io
+    - https://cloudnative-pg.github.io/charts
     - oci://registry-1.docker.io/bitnamicharts
   destinations:
     - namespace: "*"

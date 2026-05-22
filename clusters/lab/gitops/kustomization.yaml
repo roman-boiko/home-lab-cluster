@@ -4,8 +4,10 @@ resources:
   - namespaces.yaml
   - platform/argocd
   - platform/authentik
+  - platform/authentik-postgres
   - platform/cert-manager
   - platform/cilium
+  - platform/cloudnative-pg
   - platform/gateway
   - platform/longhorn
   - platform/sealed-secrets
