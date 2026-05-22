@@ -252,6 +252,34 @@ pass "Sealed Secrets Argo CD application exists"
 kubectl_wait -n sealed-secrets rollout status deployment/sealed-secrets-controller --timeout=300s
 pass "Sealed Secrets controller is rolled out"
 
+kubectl_wait -n argocd get application authentik
+pass "Authentik Argo CD application exists"
+
+authentik_app_sync_status="$(kubectl -n argocd get application authentik -o jsonpath='{.status.sync.status}')"
+[[ "${authentik_app_sync_status}" == "Synced" ]] || fail "Authentik Argo CD application is ${authentik_app_sync_status:-unknown}, expected Synced"
+pass "Authentik Argo CD application is synced"
+
+authentik_gateway_scope="$(kubectl get namespace authentik -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${authentik_gateway_scope}" == "private" ]] || fail "authentik namespace Gateway scope is ${authentik_gateway_scope:-unset}, expected private"
+pass "Authentik namespace is scoped to the private Gateway"
+
+kubectl_wait -n authentik get secret authentik-secrets
+pass "Authentik runtime secret exists"
+
+kubectl_wait -n authentik rollout status statefulset/authentik-postgresql --timeout=300s
+pass "Authentik PostgreSQL is rolled out"
+
+kubectl_wait -n authentik rollout status deployment/authentik-server --timeout=300s
+pass "Authentik server is rolled out"
+
+kubectl_wait -n authentik rollout status deployment/authentik-worker --timeout=300s
+pass "Authentik worker is rolled out"
+
+kubectl_wait -n authentik get service authentik-server
+pass "Authentik server service exists"
+
+validate_private_route authentik authentik-server authentik.home.rboiko.com authentik-server
+
 kubectl_wait -n argocd get application cilium
 pass "Cilium Argo CD application exists"
 

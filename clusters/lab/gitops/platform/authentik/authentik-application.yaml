@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: home-lab
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: 2026.5.0
+    helm:
+      valuesObject:
+        authentik:
+          existingSecret:
+            secretName: authentik-secrets
+          error_reporting:
+            enabled: false
+          postgresql:
+            host: authentik-postgresql
+            name: authentik
+            user: authentik
+        postgresql:
+          enabled: true
+          auth:
+            username: authentik
+            database: authentik
+            existingSecret: authentik-secrets
+            secretKeys:
+              adminPasswordKey: postgres-password
+              userPasswordKey: password
+          primary:
+            persistence:
+              enabled: true
+              storageClass: longhorn
+              size: 8Gi
+        server:
+          replicas: 1
+          route:
+            main:
+              enabled: true
+              hostnames:
+                - authentik.home.rboiko.com
+              parentRefs:
+                - group: gateway.networking.k8s.io
+                  kind: Gateway
+                  name: private-https
+                  namespace: gateway-system
+                  sectionName: https-wildcard
+        worker:
+          replicas: 1
+        serviceAccount:
+          create: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true

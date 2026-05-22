@@ -26,3 +26,22 @@ The script also adds `cloudflare-api-token.sealedsecret.yaml` to
 `clusters/lab/gitops/platform/cert-manager/config/kustomization.yaml`. Commit both files.
 The encrypted object should create `cert-manager/cloudflare-api-token`, which is
 referenced by the `letsencrypt-prod` ClusterIssuer.
+
+## Authentik Runtime Secret
+
+Authentik needs a stable signing key and PostgreSQL credentials before its Argo CD
+application can start. Create the live secret without printing values:
+
+```bash
+scripts/create-authentik-secret.sh
+```
+
+This creates `authentik/authentik-secrets` with:
+
+- `AUTHENTIK_SECRET_KEY`
+- `AUTHENTIK_POSTGRESQL__PASSWORD`
+- `password`
+- `postgres-password`
+
+Do not rotate `AUTHENTIK_SECRET_KEY` after first install unless you intentionally
+want to invalidate existing Authentik sessions and generated identifiers.

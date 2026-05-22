@@ -54,8 +54,19 @@ Longhorn and Hubble UI are also exposed only through the private Gateway:
 
 - `longhorn.home.rboiko.com` routes to `longhorn-system/longhorn-frontend`.
 - `hubble.home.rboiko.com` routes to `kube-system/hubble-ui`.
+- `authentik.home.rboiko.com` routes to `authentik/authentik-server`.
 
 Keep these names in LAN DNS only and do not forward `192.168.5.101` from the router.
+
+Authentik is installed by Argo CD from the official Authentik Helm chart with bundled PostgreSQL on Longhorn storage. Before syncing Authentik for the first
+time, create the live runtime secret:
+
+```bash
+scripts/create-authentik-secret.sh
+```
+
+The Authentik server includes the embedded proxy outpost. Use that outpost for initial proxy providers, then add Kubernetes-managed outposts later if separate
+outpost deployments are needed for scale or isolation.
 
 Longhorn is installed by Argo CD from the Longhorn Helm chart. It creates the `longhorn` StorageClass and marks it as the cluster default. The k3s `local-path` StorageClass is kept available but marked non-default by GitOps. The Longhorn pre-upgrade hook is disabled because Longhorn recommends disabling it for Argo CD and other GitOps installs.
 
