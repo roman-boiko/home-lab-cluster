@@ -1,7 +1,11 @@
 ---
 k3s_version: "v1.35.4+k3s1"
 
-k3s_install_url: https://get.k3s.io
+# Pin install.sh to the release tag instead of floating get.k3s.io (master).
+# Set k3s_install_checksum to a value like "sha256:<hex>" to enable verification.
+k3s_install_script_ref: "{{ k3s_version | regex_replace('\\+', '%2B') }}"
+k3s_install_url: "https://raw.githubusercontent.com/k3s-io/k3s/{{ k3s_install_script_ref }}/install.sh"
+k3s_install_checksum: ""
 
 # Keep base k3s small and leave networking to Cilium.
 k3s_server_config:

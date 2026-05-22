@@ -27,6 +27,7 @@
     url: "{{ k3s_install_url }}"
     dest: /usr/local/bin/k3s-install.sh
     mode: "0755"
+    checksum: "{{ k3s_install_checksum | default(omit, true) }}"
 
 - name: Install k3s server
   ansible.builtin.command: /usr/local/bin/k3s-install.sh
