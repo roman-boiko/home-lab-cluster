@@ -21,17 +21,37 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Install kubeconform
+        env:
+          KUBECONFORM_VERSION: v0.6.7
+        run: |
+          curl -fsSL -o /tmp/kubeconform.tar.gz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
+          sudo install -m 0755 /tmp/kubeconform /usr/local/bin/kubeconform
+
       - name: Lint YAML
         run: yamllint .
 
       - name: Check Ansible syntax
         run: ansible-playbook -i ansible/inventory/hosts.ini ansible/site.yml --syntax-check
 
-      - name: Render Argo CD bootstrap
-        run: kubectl kustomize clusters/lab/bootstrap/argocd/seed
+      - name: Assert AppProject bootstrap and gitops copies match
+        run: |
+          diff -u \
+            clusters/lab/bootstrap/argocd/seed/project.yaml \
+            clusters/lab/gitops/platform/argocd/project.yaml
 
-      - name: Render Argo CD install
-        run: kubectl kustomize clusters/lab/bootstrap/argocd/install
-
-      - name: Render cluster GitOps manifests
-        run: kubectl kustomize clusters/lab/gitops
+      - name: Render and validate manifests
+        run: |
+          set -euo pipefail
+          for dir in clusters/lab/bootstrap/argocd/seed \
+                     clusters/lab/bootstrap/argocd/install \
+                     clusters/lab/gitops; do
+            echo "== $dir =="
+            kubectl kustomize "$dir" | kubeconform \
+              -strict \
+              -ignore-missing-schemas \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          done
