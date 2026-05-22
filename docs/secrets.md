@@ -44,9 +44,15 @@ This creates `authentik/authentik-secrets` with:
 - `AUTHENTIK_POSTGRESQL__USER`
 - `AUTHENTIK_POSTGRESQL__PORT`
 - `AUTHENTIK_POSTGRESQL__PASSWORD`
+- `ARGOCD_OIDC_CLIENT_ID`
+- `ARGOCD_OIDC_CLIENT_SECRET`
 - `username`
 - `password`
 - `postgres-password`
 
 Do not rotate `AUTHENTIK_SECRET_KEY` after first install unless you intentionally
 want to invalidate existing Authentik sessions and generated identifiers.
+
+The same script mirrors the Argo CD OIDC client secret into
+`argocd/authentik-oidc` with the label required by Argo CD. Do not commit this
+secret in plaintext.

@@ -15,7 +15,7 @@ spec:
       valuesObject:
         global:
           podAnnotations:
-            home-lab.rboiko.com/authentik-secret-revision: "v3"
+            home-lab.rboiko.com/authentik-secret-revision: "v4"
         authentik:
           existingSecret:
             secretName: authentik-secrets
@@ -27,6 +27,9 @@ spec:
             user: authentik
         postgresql:
           enabled: false
+        blueprints:
+          configMaps:
+            - home-lab-authentik-blueprints
         server:
           replicas: 1
           resources:

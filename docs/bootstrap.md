@@ -48,12 +48,13 @@ Only forward router traffic or Cloudflare Tunnel traffic to `192.168.5.100`. Do 
 names such as `argocd.home.rboiko.com`, `longhorn.home.rboiko.com`, and `hubble.home.rboiko.com` so they resolve to `192.168.5.101` only on the LAN.
 
 Argo CD is exposed only through the private Gateway at `argocd.home.rboiko.com`. The Gateway terminates TLS with the shared wildcard certificate and forwards
-plain HTTP to `argocd-server` on port `80`; Argo CD authentication remains enabled.
+plain HTTP to `argocd-server` on port `80`; Argo CD uses Authentik as its OIDC provider. Runtime OIDC client material is stored in `argocd/authentik-oidc`
+and mirrored into `authentik/authentik-secrets` by `scripts/create-authentik-secret.sh`.
 
-Longhorn and Hubble UI are also exposed only through the private Gateway:
+Longhorn and Hubble UI are exposed only through the private Gateway and are protected by Authentik's embedded proxy outpost:
 
-- `longhorn.home.rboiko.com` routes to `longhorn-system/longhorn-frontend`.
-- `hubble.home.rboiko.com` routes to `kube-system/hubble-ui`.
+- `longhorn.home.rboiko.com` routes to `authentik/authentik-server`, which proxies to `longhorn-system/longhorn-frontend`.
+- `hubble.home.rboiko.com` routes to `authentik/authentik-server`, which proxies to `kube-system/hubble-ui`.
 
 Keep the private names in LAN DNS only and do not forward `192.168.5.101` from the router.
 
@@ -69,8 +70,9 @@ time, create the live runtime secret:
 scripts/create-authentik-secret.sh
 ```
 
-The Authentik server includes the embedded proxy outpost. Use that outpost for initial proxy providers, then add Kubernetes-managed outposts later if separate
-outpost deployments are needed for scale or isolation.
+The Authentik server includes the embedded proxy outpost. The mounted `home-lab-authentik-blueprints` ConfigMap creates the Argo CD OIDC provider, Longhorn
+and Hubble proxy providers, and assigns those proxy providers to the embedded outpost. Add Kubernetes-managed outposts later only if separate outpost
+deployments are needed for scale or isolation.
 
 CloudNativePG is installed by Argo CD from the official CloudNativePG Helm chart. Use `scripts/migrate-authentik-postgres-to-cnpg.sh` only for the one-time
 migration from the old bundled Authentik PostgreSQL StatefulSet to the CloudNativePG cluster.

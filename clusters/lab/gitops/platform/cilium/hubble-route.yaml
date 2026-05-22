@@ -20,7 +20,7 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: hubble-ui
-          namespace: kube-system
+          name: authentik-server
+          namespace: authentik
           port: 80
           weight: 1

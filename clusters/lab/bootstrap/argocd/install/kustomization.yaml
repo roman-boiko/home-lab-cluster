@@ -16,6 +16,39 @@ patches:
       data:
         server.insecure: "true"
   - target:
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: argocd-cm
+      data:
+        url: https://argocd.home.rboiko.com
+        oidc.config: |
+          name: authentik
+          issuer: https://auth.home.rboiko.com/application/o/argocd/
+          clientID: argocd
+          clientSecret: $authentik-oidc:clientSecret
+          requestedScopes:
+            - openid
+            - profile
+            - email
+            - groups
+  - target:
+      kind: ConfigMap
+      name: argocd-rbac-cm
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: argocd-rbac-cm
+      data:
+        policy.csv: |
+          g, ArgoCD Admins, role:admin
+          g, Home Lab Admins, role:admin
+        scopes: '[groups]'
+  - target:
       kind: Deployment
       name: argocd-server
     patch: |-
@@ -27,7 +60,7 @@ patches:
         template:
           metadata:
             annotations:
-              home-lab.rboiko.com/config-revision: "server-insecure-v1"
+              home-lab.rboiko.com/config-revision: "server-insecure-authentik-oidc-v1"
   - target:
       kind: Deployment
       labelSelector: app.kubernetes.io/part-of=argocd

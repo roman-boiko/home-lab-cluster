@@ -253,6 +253,21 @@ argocd_server_insecure="$(kubectl -n argocd get configmap argocd-cmd-params-cm -
 [[ "${argocd_server_insecure}" == "true" ]] || fail "Argo CD server.insecure is ${argocd_server_insecure:-unset}, expected true"
 pass "Argo CD server is configured for Gateway TLS termination"
 
+kubectl_wait -n argocd get secret authentik-oidc
+pass "Argo CD Authentik OIDC secret exists"
+
+argocd_oidc_config="$(kubectl -n argocd get configmap argocd-cm -o jsonpath='{.data.oidc\.config}')"
+grep -q 'issuer: https://auth.home.rboiko.com/application/o/argocd/' <<< "${argocd_oidc_config}" \
+  || fail "Argo CD OIDC issuer is not configured for Authentik"
+grep -q 'clientSecret: $authentik-oidc:clientSecret' <<< "${argocd_oidc_config}" \
+  || fail "Argo CD OIDC client secret does not reference authentik-oidc"
+pass "Argo CD OIDC config points to Authentik"
+
+argocd_rbac_config="$(kubectl -n argocd get configmap argocd-rbac-cm -o jsonpath='{.data.policy\.csv}')"
+grep -q 'g, ArgoCD Admins, role:admin' <<< "${argocd_rbac_config}" \
+  || fail "Argo CD RBAC does not map ArgoCD Admins to role:admin"
+pass "Argo CD RBAC maps Authentik admin group"
+
 kubectl_wait -n argocd get httproute argocd
 pass "Argo CD private HTTPRoute exists"
 
@@ -311,6 +326,9 @@ pass "Authentik namespace is scoped to the public Gateway"
 kubectl_wait -n authentik get secret authentik-secrets
 pass "Authentik runtime secret exists"
 
+kubectl_wait -n authentik get configmap home-lab-authentik-blueprints
+pass "Authentik home-lab blueprint ConfigMap exists"
+
 for key in \
   AUTHENTIK_SECRET_KEY \
   AUTHENTIK_POSTGRESQL__HOST \
@@ -318,6 +336,8 @@ for key in \
   AUTHENTIK_POSTGRESQL__USER \
   AUTHENTIK_POSTGRESQL__PORT \
   AUTHENTIK_POSTGRESQL__PASSWORD \
+  ARGOCD_OIDC_CLIENT_ID \
+  ARGOCD_OIDC_CLIENT_SECRET \
   username \
   password \
   postgres-password; do
@@ -357,6 +377,12 @@ pass "Authentik server service exists"
 
 validate_public_route authentik authentik-server auth.home.rboiko.com authentik-server
 
+kubectl_wait -n authentik get referencegrant allow-longhorn-route-to-authentik
+pass "Authentik ReferenceGrant allows Longhorn route backend"
+
+kubectl_wait -n authentik get referencegrant allow-hubble-route-to-authentik
+pass "Authentik ReferenceGrant allows Hubble route backend"
+
 kubectl_wait -n argocd get application cilium
 pass "Cilium Argo CD application exists"
 
@@ -377,7 +403,11 @@ pass "Hubble UI is rolled out"
 kubectl_wait -n kube-system get service hubble-ui
 pass "Hubble UI service exists"
 
-validate_private_route kube-system hubble-ui hubble.home.rboiko.com hubble-ui
+validate_private_route kube-system hubble-ui hubble.home.rboiko.com authentik-server
+
+hubble_route_backend_namespace="$(kubectl -n kube-system get httproute hubble-ui -o jsonpath='{.spec.rules[0].backendRefs[0].namespace}')"
+[[ "${hubble_route_backend_namespace}" == "authentik" ]] || fail "Hubble UI route backend namespace is ${hubble_route_backend_namespace:-unset}, expected authentik"
+pass "Hubble UI route is protected by Authentik proxy outpost"
 
 kubectl_wait -n argocd get application cert-manager
 pass "cert-manager Argo CD application exists"
@@ -432,7 +462,11 @@ longhorn_gateway_scope="$(kubectl get namespace longhorn-system -o jsonpath='{.m
 [[ "${longhorn_gateway_scope}" == "private" ]] || fail "longhorn-system namespace Gateway scope is ${longhorn_gateway_scope:-unset}, expected private"
 pass "Longhorn namespace is scoped to the private Gateway"
 
-validate_private_route longhorn-system longhorn longhorn.home.rboiko.com longhorn-frontend
+validate_private_route longhorn-system longhorn longhorn.home.rboiko.com authentik-server
+
+longhorn_route_backend_namespace="$(kubectl -n longhorn-system get httproute longhorn -o jsonpath='{.spec.rules[0].backendRefs[0].namespace}')"
+[[ "${longhorn_route_backend_namespace}" == "authentik" ]] || fail "Longhorn route backend namespace is ${longhorn_route_backend_namespace:-unset}, expected authentik"
+pass "Longhorn route is protected by Authentik proxy outpost"
 
 kubectl_wait get storageclass longhorn
 pass "Longhorn StorageClass exists"
