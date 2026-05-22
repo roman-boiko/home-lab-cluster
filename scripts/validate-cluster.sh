@@ -192,6 +192,23 @@ validate_public_route() {
   pass "${namespace}/${route_name} backend references are resolved"
 }
 
+validate_authentik_proxy_headers() {
+  local namespace="$1"
+  local route_name="$2"
+
+  local route_headers
+  route_headers="$(kubectl -n "${namespace}" get httproute "${route_name}" -o yaml)"
+  grep -q 'name: X-Forwarded-Proto' <<< "${route_headers}" \
+    || fail "${namespace}/${route_name} does not set X-Forwarded-Proto for Authentik"
+  grep -q 'value: https' <<< "${route_headers}" \
+    || fail "${namespace}/${route_name} does not force X-Forwarded-Proto=https for Authentik"
+  grep -q 'name: X-Forwarded-Port' <<< "${route_headers}" \
+    || fail "${namespace}/${route_name} does not set X-Forwarded-Port for Authentik"
+  grep -q 'value: "443"' <<< "${route_headers}" \
+    || fail "${namespace}/${route_name} does not force X-Forwarded-Port=443 for Authentik"
+  pass "${namespace}/${route_name} forwards HTTPS headers to Authentik"
+}
+
 validate_gateway public-https 192.168.5.100 public
 validate_gateway private-https 192.168.5.101 private
 validate_redirect_route public-http-to-https-redirect
@@ -329,6 +346,13 @@ pass "Authentik runtime secret exists"
 kubectl_wait -n authentik get configmap home-lab-authentik-blueprints
 pass "Authentik home-lab blueprint ConfigMap exists"
 
+authentik_blueprint="$(kubectl -n authentik get configmap home-lab-authentik-blueprints -o jsonpath='{.data.home-lab-apps\.yaml}')"
+grep -q 'scope_name: groups' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not define an Argo CD groups scope"
+grep -q 'authorization_code' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not enable authorization_code grant for Argo CD"
+pass "Authentik blueprint defines Argo CD OIDC groups and grant types"
+
 for key in \
   AUTHENTIK_SECRET_KEY \
   AUTHENTIK_POSTGRESQL__HOST \
@@ -408,6 +432,7 @@ validate_private_route kube-system hubble-ui hubble.home.rboiko.com authentik-se
 hubble_route_backend_namespace="$(kubectl -n kube-system get httproute hubble-ui -o jsonpath='{.spec.rules[0].backendRefs[0].namespace}')"
 [[ "${hubble_route_backend_namespace}" == "authentik" ]] || fail "Hubble UI route backend namespace is ${hubble_route_backend_namespace:-unset}, expected authentik"
 pass "Hubble UI route is protected by Authentik proxy outpost"
+validate_authentik_proxy_headers kube-system hubble-ui
 
 kubectl_wait -n argocd get application cert-manager
 pass "cert-manager Argo CD application exists"
@@ -467,6 +492,7 @@ validate_private_route longhorn-system longhorn longhorn.home.rboiko.com authent
 longhorn_route_backend_namespace="$(kubectl -n longhorn-system get httproute longhorn -o jsonpath='{.spec.rules[0].backendRefs[0].namespace}')"
 [[ "${longhorn_route_backend_namespace}" == "authentik" ]] || fail "Longhorn route backend namespace is ${longhorn_route_backend_namespace:-unset}, expected authentik"
 pass "Longhorn route is protected by Authentik proxy outpost"
+validate_authentik_proxy_headers longhorn-system longhorn
 
 kubectl_wait get storageclass longhorn
 pass "Longhorn StorageClass exists"
