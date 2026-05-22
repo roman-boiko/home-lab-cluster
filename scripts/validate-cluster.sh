@@ -266,6 +266,20 @@ pass "Authentik namespace is scoped to the private Gateway"
 kubectl_wait -n authentik get secret authentik-secrets
 pass "Authentik runtime secret exists"
 
+for key in \
+  AUTHENTIK_SECRET_KEY \
+  AUTHENTIK_POSTGRESQL__HOST \
+  AUTHENTIK_POSTGRESQL__NAME \
+  AUTHENTIK_POSTGRESQL__USER \
+  AUTHENTIK_POSTGRESQL__PORT \
+  AUTHENTIK_POSTGRESQL__PASSWORD \
+  password \
+  postgres-password; do
+  kubectl -n authentik get secret authentik-secrets -o "jsonpath={.data.${key}}" | grep -q . \
+    || fail "Authentik runtime secret is missing ${key}"
+done
+pass "Authentik runtime secret contains required keys"
+
 kubectl_wait -n authentik rollout status statefulset/authentik-postgresql --timeout=300s
 pass "Authentik PostgreSQL is rolled out"
 

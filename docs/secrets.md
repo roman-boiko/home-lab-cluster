@@ -39,6 +39,10 @@ scripts/create-authentik-secret.sh
 This creates `authentik/authentik-secrets` with:
 
 - `AUTHENTIK_SECRET_KEY`
+- `AUTHENTIK_POSTGRESQL__HOST`
+- `AUTHENTIK_POSTGRESQL__NAME`
+- `AUTHENTIK_POSTGRESQL__USER`
+- `AUTHENTIK_POSTGRESQL__PORT`
 - `AUTHENTIK_POSTGRESQL__PASSWORD`
 - `password`
 - `postgres-password`

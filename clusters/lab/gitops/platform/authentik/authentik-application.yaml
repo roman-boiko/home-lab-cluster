@@ -13,6 +13,9 @@ spec:
     targetRevision: 2026.5.0
     helm:
       valuesObject:
+        global:
+          podAnnotations:
+            home-lab.rboiko.com/authentik-secret-revision: "v2"
         authentik:
           existingSecret:
             secretName: authentik-secrets
