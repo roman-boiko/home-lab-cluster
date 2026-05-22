@@ -54,9 +54,12 @@ Longhorn and Hubble UI are also exposed only through the private Gateway:
 
 - `longhorn.home.rboiko.com` routes to `longhorn-system/longhorn-frontend`.
 - `hubble.home.rboiko.com` routes to `kube-system/hubble-ui`.
-- `authentik.home.rboiko.com` routes to `authentik/authentik-server`.
 
-Keep these names in LAN DNS only and do not forward `192.168.5.101` from the router.
+Keep the private names in LAN DNS only and do not forward `192.168.5.101` from the router.
+
+Authentik is exposed through the public Gateway:
+
+- `auth.home.rboiko.com` routes to `authentik/authentik-server`.
 
 Authentik is installed by Argo CD from the official Authentik Helm chart. Its PostgreSQL database is managed separately by CloudNativePG as
 `authentik/authentik-postgres` on Longhorn storage; Authentik connects through the `authentik-postgres-rw` service. Before syncing Authentik for the first

@@ -4,4 +4,4 @@ metadata:
   name: authentik
   labels:
     app.kubernetes.io/managed-by: argocd
-    home-lab.rboiko.com/gateway-scope: private
+    home-lab.rboiko.com/gateway-scope: public

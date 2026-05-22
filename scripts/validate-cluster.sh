@@ -157,6 +157,41 @@ validate_private_route() {
   pass "${namespace}/${route_name} backend references are resolved"
 }
 
+validate_public_route() {
+  local namespace="$1"
+  local route_name="$2"
+  local expected_hostname="$3"
+  local expected_backend="$4"
+
+  kubectl_wait -n "${namespace}" get httproute "${route_name}"
+  pass "${namespace}/${route_name} public HTTPRoute exists"
+
+  local route_parent
+  route_parent="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.parentRefs[0].name}')"
+  [[ "${route_parent}" == "public-https" ]] || fail "${namespace}/${route_name} parent is ${route_parent:-unset}, expected public-https"
+  pass "${namespace}/${route_name} attaches to the public Gateway"
+
+  local route_hostname
+  route_hostname="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.hostnames[0]}')"
+  [[ "${route_hostname}" == "${expected_hostname}" ]] || fail "${namespace}/${route_name} hostname is ${route_hostname:-unset}"
+  pass "${namespace}/${route_name} uses ${expected_hostname}"
+
+  local route_backend
+  route_backend="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{.spec.rules[0].backendRefs[0].name}')"
+  [[ "${route_backend}" == "${expected_backend}" ]] || fail "${namespace}/${route_name} backend is ${route_backend:-unset}, expected ${expected_backend}"
+  pass "${namespace}/${route_name} routes to ${expected_backend}"
+
+  local route_accepted
+  route_accepted="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{range .status.parents[*].conditions[?(@.type=="Accepted")]}{.status}{end}')"
+  [[ "${route_accepted}" == *True* ]] || fail "${namespace}/${route_name} is not accepted by the Gateway"
+  pass "${namespace}/${route_name} is accepted by the Gateway"
+
+  local route_refs
+  route_refs="$(kubectl -n "${namespace}" get httproute "${route_name}" -o jsonpath='{range .status.parents[*].conditions[?(@.type=="ResolvedRefs")]}{.status}{end}')"
+  [[ "${route_refs}" == *True* ]] || fail "${namespace}/${route_name} backend references are not resolved"
+  pass "${namespace}/${route_name} backend references are resolved"
+}
+
 validate_gateway public-https 192.168.5.100 public
 validate_gateway private-https 192.168.5.101 private
 validate_redirect_route public-http-to-https-redirect
@@ -270,8 +305,8 @@ authentik_app_sync_status="$(kubectl -n argocd get application authentik -o json
 pass "Authentik Argo CD application is synced"
 
 authentik_gateway_scope="$(kubectl get namespace authentik -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
-[[ "${authentik_gateway_scope}" == "private" ]] || fail "authentik namespace Gateway scope is ${authentik_gateway_scope:-unset}, expected private"
-pass "Authentik namespace is scoped to the private Gateway"
+[[ "${authentik_gateway_scope}" == "public" ]] || fail "authentik namespace Gateway scope is ${authentik_gateway_scope:-unset}, expected public"
+pass "Authentik namespace is scoped to the public Gateway"
 
 kubectl_wait -n authentik get secret authentik-secrets
 pass "Authentik runtime secret exists"
@@ -320,7 +355,7 @@ pass "Authentik worker is rolled out"
 kubectl_wait -n authentik get service authentik-server
 pass "Authentik server service exists"
 
-validate_private_route authentik authentik-server authentik.home.rboiko.com authentik-server
+validate_public_route authentik authentik-server auth.home.rboiko.com authentik-server
 
 kubectl_wait -n argocd get application cilium
 pass "Cilium Argo CD application exists"

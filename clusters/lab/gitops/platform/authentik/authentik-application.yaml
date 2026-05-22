@@ -33,11 +33,11 @@ spec:
             main:
               enabled: true
               hostnames:
-                - authentik.home.rboiko.com
+                - auth.home.rboiko.com
               parentRefs:
                 - group: gateway.networking.k8s.io
                   kind: Gateway
-                  name: private-https
+                  name: public-https
                   namespace: gateway-system
                   sectionName: https-wildcard
         worker:
