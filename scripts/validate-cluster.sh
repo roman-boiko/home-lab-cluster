@@ -352,11 +352,11 @@ grep -q 'scope_name: groups' <<< "${authentik_blueprint}" \
 grep -q 'authorization_code' <<< "${authentik_blueprint}" \
   || fail "Authentik blueprint does not enable authorization_code grant for Argo CD"
 pass "Authentik blueprint defines Argo CD OIDC groups and grant types"
-grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc.cluster.local\.' <<< "${authentik_blueprint}" \
-  || fail "Authentik Longhorn proxy provider does not use an absolute cluster DNS name"
-grep -q 'internal_host: http://hubble-ui.kube-system.svc.cluster.local\.' <<< "${authentik_blueprint}" \
-  || fail "Authentik Hubble proxy provider does not use an absolute cluster DNS name"
-pass "Authentik proxy providers use absolute cluster DNS names"
+grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${authentik_blueprint}" \
+  || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
+grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
+  || fail "Authentik Hubble proxy provider does not use a resolvable in-cluster service name"
+pass "Authentik proxy providers use resolvable in-cluster service names"
 
 for key in \
   AUTHENTIK_SECRET_KEY \

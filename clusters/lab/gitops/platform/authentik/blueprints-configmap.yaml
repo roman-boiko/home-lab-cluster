@@ -82,7 +82,7 @@ data:
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow], [designation, invalidation]]
           mode: proxy
           external_host: https://longhorn.home.rboiko.com
-          internal_host: http://longhorn-frontend.longhorn-system.svc.cluster.local.
+          internal_host: http://longhorn-frontend.longhorn-system.svc
           internal_host_ssl_validation: false
           property_mappings:
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/proxy/scope-proxy]]
@@ -106,7 +106,7 @@ data:
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow], [designation, invalidation]]
           mode: proxy
           external_host: https://hubble.home.rboiko.com
-          internal_host: http://hubble-ui.kube-system.svc.cluster.local.
+          internal_host: http://hubble-ui.kube-system.svc
           internal_host_ssl_validation: false
           property_mappings:
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/proxy/scope-proxy]]
