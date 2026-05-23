@@ -351,7 +351,9 @@ grep -q 'scope_name: groups' <<< "${authentik_blueprint}" \
   || fail "Authentik blueprint does not define an Argo CD groups scope"
 grep -q 'authorization_code' <<< "${authentik_blueprint}" \
   || fail "Authentik blueprint does not enable authorization_code grant for Argo CD"
-pass "Authentik blueprint defines Argo CD OIDC groups and grant types"
+grep -q 'signing_key: !Find \[authentik_crypto.certificatekeypair, \[name, authentik Self-signed Certificate\]\]' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not configure an RS256 signing key for Argo CD"
+pass "Authentik blueprint defines Argo CD OIDC groups, grant types, and signing key"
 grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${authentik_blueprint}" \
   || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
 grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
