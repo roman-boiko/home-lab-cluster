@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - brand-assets-configmap.yaml
+  - brand-blueprint-configmap.yaml
   - blueprints-configmap.yaml
   - reference-grants.yaml
   - authentik-application.yaml

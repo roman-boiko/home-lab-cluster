@@ -30,6 +30,7 @@ spec:
           enabled: false
         blueprints:
           configMaps:
+            - home-lab-authentik-brand-blueprint
             - home-lab-authentik-blueprints
         server:
           replicas: 1

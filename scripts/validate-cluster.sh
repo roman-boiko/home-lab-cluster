@@ -393,17 +393,24 @@ pass "Authentik runtime secret exists"
 kubectl_wait -n authentik get configmap home-lab-authentik-blueprints
 pass "Authentik home-lab blueprint ConfigMap exists"
 
+kubectl_wait -n authentik get configmap home-lab-authentik-brand-blueprint
+pass "Authentik brand blueprint ConfigMap exists"
+
 kubectl_wait -n authentik get configmap home-lab-authentik-brand-assets
 pass "Authentik brand asset ConfigMap exists"
 
-authentik_blueprint="$(kubectl -n authentik get configmap home-lab-authentik-blueprints -o jsonpath='{.data.home-lab-apps\.yaml}')"
-grep -q "branding_title: Welcome to Roman's SSO page" <<< "${authentik_blueprint}" \
+authentik_brand_blueprint="$(kubectl -n authentik get configmap home-lab-authentik-brand-blueprint -o jsonpath='{.data.home-lab-brand\.yaml}')"
+grep -q "branding_title: Welcome to Roman's SSO page" <<< "${authentik_brand_blueprint}" \
   || fail "Authentik blueprint does not configure the home lab Brand title"
-grep -q 'branding_logo: home-lab/robot-logo.svg' <<< "${authentik_blueprint}" \
+grep -q 'branding_logo: home-lab/robot-logo.svg' <<< "${authentik_brand_blueprint}" \
   || fail "Authentik blueprint does not configure the robot logo"
-grep -q 'branding_favicon: home-lab/robot-favicon.svg' <<< "${authentik_blueprint}" \
+grep -q 'branding_favicon: home-lab/robot-favicon.svg' <<< "${authentik_brand_blueprint}" \
   || fail "Authentik blueprint does not configure the robot favicon"
+grep -q 'color: var(--ak-neutral-text)' <<< "${authentik_brand_blueprint}" \
+  || fail "Authentik brand blueprint does not force readable dark text"
 pass "Authentik blueprint defines home lab Brand title and robot assets"
+
+authentik_blueprint="$(kubectl -n authentik get configmap home-lab-authentik-blueprints -o jsonpath='{.data.home-lab-apps\.yaml}')"
 grep -q 'scope_name: groups' <<< "${authentik_blueprint}" \
   || fail "Authentik blueprint does not define an Argo CD groups scope"
 grep -q 'authorization_code' <<< "${authentik_blueprint}" \
