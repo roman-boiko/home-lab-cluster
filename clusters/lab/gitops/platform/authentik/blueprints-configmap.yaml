@@ -28,6 +28,8 @@ data:
               --ak-neutral-bg: #f5f3ee;
               --ak-neutral-panel: rgba(255, 255, 255, 0.88);
               --ak-neutral-text: #1e293b;
+              --ak-neutral-muted: #475569;
+              --ak-neutral-input: #ffffff;
             }
 
             .pf-v5-c-login,
@@ -45,17 +47,55 @@ data:
               border-radius: 24px !important;
               box-shadow: 0 24px 80px rgba(15, 23, 42, 0.14) !important;
               backdrop-filter: blur(14px);
+              color: var(--ak-neutral-text) !important;
             }
 
             .pf-v5-c-login__main-header,
-            .pf-c-login__main-header {
+            .pf-v5-c-login__main-body,
+            .pf-v5-c-login__main-footer,
+            .pf-v5-c-login__main *:not(.pf-v5-c-button):not(.pf-c-button),
+            .pf-c-login__main-header,
+            .pf-c-login__main-body,
+            .pf-c-login__main-footer,
+            .pf-c-login__main *:not(.pf-v5-c-button):not(.pf-c-button) {
               color: var(--ak-neutral-text) !important;
+            }
+
+            .pf-v5-c-form__helper-text,
+            .pf-v5-c-helper-text,
+            .pf-v5-c-login__main-footer-band,
+            .pf-c-form__helper-text,
+            .pf-c-helper-text,
+            .pf-c-login__main-footer-band {
+              color: var(--ak-neutral-muted) !important;
+            }
+
+            .pf-v5-c-form-control,
+            .pf-c-form-control,
+            input,
+            textarea,
+            select {
+              background: var(--ak-neutral-input) !important;
+              color: var(--ak-neutral-text) !important;
+            }
+
+            input::placeholder,
+            textarea::placeholder {
+              color: var(--ak-neutral-muted) !important;
+              opacity: 1;
+            }
+
+            a,
+            .pf-v5-c-login__main a,
+            .pf-c-login__main a {
+              color: var(--ak-accent) !important;
             }
 
             .pf-v5-c-button.pf-m-primary,
             .pf-c-button.pf-m-primary {
               background: linear-gradient(135deg, var(--ak-accent), var(--ak-accent-blue)) !important;
               border-radius: 999px !important;
+              color: #ffffff !important;
             }
 
             img[alt="authentik Logo"],
