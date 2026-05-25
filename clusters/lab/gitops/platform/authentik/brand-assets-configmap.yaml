@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-lab-authentik-brand-assets
+  namespace: authentik
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+data:
+  robot-logo.svg: |
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-labelledby="title desc">
+      <title id="title">Roman's SSO robot logo</title>
+      <desc id="desc">A friendly robot head with Home Lab SSO wordmark.</desc>
+      <defs>
+        <linearGradient id="face" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#f8fafc"/>
+          <stop offset="1" stop-color="#dbeafe"/>
+        </linearGradient>
+        <linearGradient id="accent" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#0f766e"/>
+          <stop offset="1" stop-color="#2563eb"/>
+        </linearGradient>
+      </defs>
+      <rect width="360" height="120" rx="28" fill="#f5f3ee"/>
+      <g transform="translate(24 18)">
+        <path d="M48 8v12" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="48" cy="5" r="5" fill="#0f766e"/>
+        <rect x="10" y="22" width="76" height="64" rx="20" fill="url(#face)" stroke="#334155" stroke-width="6"/>
+        <rect x="0" y="44" width="12" height="24" rx="6" fill="#334155"/>
+        <rect x="84" y="44" width="12" height="24" rx="6" fill="#334155"/>
+        <circle cx="35" cy="52" r="8" fill="#2563eb"/>
+        <circle cx="61" cy="52" r="8" fill="#0f766e"/>
+        <path d="M34 70c8 8 20 8 28 0" fill="none" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
+        <rect x="28" y="90" width="40" height="10" rx="5" fill="url(#accent)"/>
+      </g>
+      <g fill="#1e293b" font-family="Avenir Next, Helvetica, Arial, sans-serif">
+        <text x="132" y="55" font-size="28" font-weight="700">Roman's SSO</text>
+        <text x="132" y="82" font-size="16" font-weight="500" fill="#64748b">Home lab identity gateway</text>
+      </g>
+    </svg>
+  robot-favicon.svg: |
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Roman's SSO robot">
+      <rect width="64" height="64" rx="16" fill="#f5f3ee"/>
+      <path d="M32 8v8" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="32" cy="7" r="4" fill="#0f766e"/>
+      <rect x="14" y="18" width="36" height="32" rx="10" fill="#dbeafe" stroke="#334155" stroke-width="4"/>
+      <circle cx="25" cy="32" r="4" fill="#2563eb"/>
+      <circle cx="39" cy="32" r="4" fill="#0f766e"/>
+      <path d="M24 42c5 4 11 4 16 0" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+    </svg>

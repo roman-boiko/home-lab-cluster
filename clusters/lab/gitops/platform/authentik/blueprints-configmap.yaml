@@ -13,6 +13,57 @@ data:
       labels:
         blueprints.goauthentik.io/description: Home lab applications and SSO providers
     entries:
+      - id: home-lab-brand
+        model: authentik_brands.brand
+        identifiers:
+          domain: auth.home.rboiko.com
+        attrs:
+          branding_title: Welcome to Roman's SSO page
+          branding_logo: home-lab/robot-logo.svg
+          branding_favicon: home-lab/robot-favicon.svg
+          branding_custom_css: |
+            :root {
+              --ak-accent: #0f766e;
+              --ak-accent-blue: #2563eb;
+              --ak-neutral-bg: #f5f3ee;
+              --ak-neutral-panel: rgba(255, 255, 255, 0.88);
+              --ak-neutral-text: #1e293b;
+            }
+
+            .pf-v5-c-login,
+            .pf-c-login {
+              background:
+                radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.12), transparent 28rem),
+                radial-gradient(circle at 80% 10%, rgba(15, 118, 110, 0.14), transparent 26rem),
+                linear-gradient(135deg, #f8f7f3 0%, var(--ak-neutral-bg) 50%, #e8ece9 100%) !important;
+            }
+
+            .pf-v5-c-login__main,
+            .pf-c-login__main {
+              background: var(--ak-neutral-panel) !important;
+              border: 1px solid rgba(100, 116, 139, 0.24) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 24px 80px rgba(15, 23, 42, 0.14) !important;
+              backdrop-filter: blur(14px);
+            }
+
+            .pf-v5-c-login__main-header,
+            .pf-c-login__main-header {
+              color: var(--ak-neutral-text) !important;
+            }
+
+            .pf-v5-c-button.pf-m-primary,
+            .pf-c-button.pf-m-primary {
+              background: linear-gradient(135deg, var(--ak-accent), var(--ak-accent-blue)) !important;
+              border-radius: 999px !important;
+            }
+
+            img[alt="authentik Logo"],
+            .pf-v5-c-brand,
+            .pf-c-brand {
+              max-height: 88px !important;
+            }
+
       - id: home-lab-admins
         model: authentik_core.group
         identifiers:

@@ -16,6 +16,7 @@ spec:
         global:
           podAnnotations:
             home-lab.rboiko.com/authentik-secret-revision: "v4"
+            home-lab.rboiko.com/authentik-brand-revision: "v1"
         authentik:
           existingSecret:
             secretName: authentik-secrets
@@ -32,6 +33,14 @@ spec:
             - home-lab-authentik-blueprints
         server:
           replicas: 1
+          volumeMounts:
+            - name: home-lab-brand-assets
+              mountPath: /media/public/home-lab
+              readOnly: true
+          volumes:
+            - name: home-lab-brand-assets
+              configMap:
+                name: home-lab-authentik-brand-assets
           resources:
             requests:
               cpu: 100m
