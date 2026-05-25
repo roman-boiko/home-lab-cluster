@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kured
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: home-lab
+  source:
+    repoURL: https://kubereboot.github.io/charts
+    chart: kured
+    targetRevision: 5.11.0
+    helm:
+      valuesObject:
+        configuration:
+          annotateNodes: true
+          concurrency: 1
+          drainTimeout: 30m
+          endTime: "04:00"
+          forceReboot: false
+          lockTtl: 1h
+          period: 1h
+          preferNoScheduleTaint: weave.works/kured-node-reboot
+          rebootDays:
+            - sa
+          startTime: "03:00"
+          timeZone: Europe/Berlin
+        tolerations:
+          - operator: Exists
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kured
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true

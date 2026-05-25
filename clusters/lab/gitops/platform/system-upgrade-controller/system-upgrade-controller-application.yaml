@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: system-upgrade-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: home-lab
+  source:
+    repoURL: https://github.com/rancher/system-upgrade-controller.git
+    targetRevision: v0.19.1
+    path: .
+    kustomize:
+      images:
+        # renovate: image=rancher/system-upgrade-controller
+        - rancher/system-upgrade-controller:v0.19.1
+      patches:
+        - target:
+            kind: ConfigMap
+            name: default-controller-env
+          patch: |-
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: default-controller-env
+            data:
+              SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE: rancher/kubectl:v1.35.4
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: system-upgrade
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true

@@ -9,5 +9,7 @@ resources:
   - platform/cilium
   - platform/cloudnative-pg
   - platform/gateway
+  - platform/kured
   - platform/longhorn
   - platform/sealed-secrets
+  - platform/system-upgrade-controller

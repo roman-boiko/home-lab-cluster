@@ -8,7 +8,7 @@ This repository manages a Raspberry Pi home-lab Kubernetes cluster running k3s. 
 - `clusters/lab/bootstrap/argocd/install/`: pinned Argo CD install overlay, including DNS `ndots=1` patches.
 - `clusters/lab/bootstrap/argocd/seed/`: one-time AppProject and root Application applied by Ansible.
 - `clusters/lab/gitops/`: Argo CD root tree reconciled from Git.
-- `clusters/lab/gitops/platform/`: platform components managed by Argo CD: `argocd`, `authentik`, `authentik-postgres`, `cloudnative-pg`, `cert-manager`, `cilium`, `gateway`, `longhorn`, and `sealed-secrets`.
+- `clusters/lab/gitops/platform/`: platform components managed by Argo CD: `argocd`, `authentik`, `authentik-postgres`, `cloudnative-pg`, `cert-manager`, `cilium`, `gateway`, `kured`, `longhorn`, `sealed-secrets`, and `system-upgrade-controller`.
 - `scripts/`: repeatable helper scripts for bootstrap, validation, and maintenance.
 - `docs/`: runbooks, including bootstrap and encrypted secret workflows.
 
@@ -18,7 +18,11 @@ Avoid committing generated files, local machine artifacts, or secrets.
 
 Use Ansible only for bootstrap: OS preparation, initial k3s installation, first Cilium networking install, kubeconfig download, pinned Argo CD install, and the root Argo CD seed. After Argo CD is running, manage all platform and application changes through Git under `clusters/lab/gitops`.
 
-The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Authentik, CloudNativePG, Cilium, cert-manager, Longhorn, Sealed Secrets, and the public/private Gateway split. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
+The root app is `home-lab-cluster`. Child apps self-manage Argo CD, Authentik, CloudNativePG, Cilium, cert-manager, kured, Longhorn, Sealed Secrets, system-upgrade-controller, and the public/private Gateway split. Avoid direct `kubectl apply`, manual Helm installs, and node-local edits except for diagnostics or recovery.
+
+OS security updates are enabled by Ansible through `unattended-upgrades`; kured handles safe node reboots. k3s upgrades are pinned GitOps changes through `system-upgrade-controller` Plans. Keep `ansible/group_vars/all.yml` and `clusters/lab/gitops/platform/system-upgrade-controller/plans/k3s-upgrade-plans.yaml` on the same k3s version.
+
+Use Renovate for all other cluster component version bumps. Renovate opens GitHub pull requests for Argo CD Helm chart pins, Git tag pins, GitHub Actions, and selected raw GitHub release URLs; Argo CD deploys only after those PRs are merged.
 
 Expose internet-facing services through `gateway-system/public-https` at `192.168.5.100`. Keep administrative or LAN-only services on
 `gateway-system/private-https` at `192.168.5.101`; do not forward this address from the router. Namespace labels control route attachment:
@@ -31,6 +35,7 @@ Recommended baseline commands:
 - `git status --short`: inspect pending changes.
 - `scripts/bootstrap-cluster.sh --check`: preview bootstrap or k3s configuration changes.
 - `kubectl kustomize clusters/lab/gitops`: render the Argo CD root tree.
+- `kubectl kustomize clusters/lab/gitops/platform/system-upgrade-controller/plans`: render k3s upgrade Plans.
 - `kubectl kustomize clusters/lab/bootstrap/argocd/seed`: render bootstrap seed manifests.
 - `kubectl kustomize clusters/lab/bootstrap/argocd/install`: render the pinned Argo CD install overlay.
 - `argocd app diff <app-name>`: compare Git state with the live cluster.

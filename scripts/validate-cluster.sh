@@ -6,6 +6,7 @@ KUBECONFIG_PATH="${KUBECONFIG:-${ROOT_DIR}/kubeconfig/lab-k3s.yaml}"
 INVENTORY="${ANSIBLE_INVENTORY:-${ROOT_DIR}/ansible/inventory/hosts.ini}"
 EXPECTED_NODES="${EXPECTED_NODES:-4}"
 ANSIBLE_LOCAL_TEMP="${ANSIBLE_LOCAL_TEMP:-/tmp/ansible-local}"
+EXPECTED_K3S_VERSION="$(sed -n 's/^k3s_version: "\(.*\)"/\1/p' "${ROOT_DIR}/ansible/group_vars/all.yml")"
 
 export KUBECONFIG="${KUBECONFIG_PATH}"
 export ANSIBLE_LOCAL_TEMP
@@ -318,6 +319,52 @@ pass "Sealed Secrets Argo CD application exists"
 
 kubectl_wait -n sealed-secrets rollout status deployment/sealed-secrets-controller --timeout=300s
 pass "Sealed Secrets controller is rolled out"
+
+kubectl_wait -n argocd get application kured
+pass "kured Argo CD application exists"
+
+kured_app_sync_status="$(kubectl -n argocd get application kured -o jsonpath='{.status.sync.status}')"
+[[ "${kured_app_sync_status}" == "Synced" ]] || fail "kured Argo CD application is ${kured_app_sync_status:-unknown}, expected Synced"
+pass "kured Argo CD application is synced"
+
+kubectl_wait -n kured rollout status daemonset/kured --timeout=300s
+pass "kured daemonset is rolled out"
+
+kubectl_wait -n argocd get application system-upgrade-controller
+pass "system-upgrade-controller Argo CD application exists"
+
+system_upgrade_app_sync_status="$(kubectl -n argocd get application system-upgrade-controller -o jsonpath='{.status.sync.status}')"
+[[ "${system_upgrade_app_sync_status}" == "Synced" ]] \
+  || fail "system-upgrade-controller Argo CD application is ${system_upgrade_app_sync_status:-unknown}, expected Synced"
+pass "system-upgrade-controller Argo CD application is synced"
+
+kubectl_wait -n system-upgrade rollout status deployment/system-upgrade-controller --timeout=300s
+pass "system-upgrade-controller deployment is rolled out"
+
+kubectl_wait get crd plans.upgrade.cattle.io
+pass "system-upgrade-controller Plan CRD exists"
+
+kubectl_wait -n argocd get application k3s-upgrade-plans
+pass "k3s upgrade Plans Argo CD application exists"
+
+k3s_plans_app_sync_status="$(kubectl -n argocd get application k3s-upgrade-plans -o jsonpath='{.status.sync.status}')"
+[[ "${k3s_plans_app_sync_status}" == "Synced" ]] \
+  || fail "k3s upgrade Plans Argo CD application is ${k3s_plans_app_sync_status:-unknown}, expected Synced"
+pass "k3s upgrade Plans Argo CD application is synced"
+
+for plan in k3s-server k3s-agent; do
+  kubectl_wait -n system-upgrade get plan "${plan}"
+  pass "${plan} system-upgrade Plan exists"
+
+  plan_version="$(kubectl -n system-upgrade get plan "${plan}" -o jsonpath='{.spec.version}')"
+  [[ "${plan_version}" == "${EXPECTED_K3S_VERSION}" ]] \
+    || fail "${plan} version is ${plan_version:-unset}, expected ${EXPECTED_K3S_VERSION}"
+  pass "${plan} matches pinned k3s version ${EXPECTED_K3S_VERSION}"
+
+  plan_concurrency="$(kubectl -n system-upgrade get plan "${plan}" -o jsonpath='{.spec.concurrency}')"
+  [[ "${plan_concurrency}" == "1" ]] || fail "${plan} concurrency is ${plan_concurrency:-unset}, expected 1"
+  pass "${plan} upgrades one node at a time"
+done
 
 kubectl_wait -n argocd get application cloudnative-pg
 pass "CloudNativePG Argo CD application exists"

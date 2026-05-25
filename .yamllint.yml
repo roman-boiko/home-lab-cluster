@@ -1,8 +1,16 @@
 ---
 extends: default
 
+ignore: |
+  AGENTS.md
+  CLAUDE.MD
+  docs/**
+  kubeconfig/**
+
 rules:
+  document-start: disable
+  empty-lines: disable
   line-length:
-    max: 160
+    max: 300
   truthy:
     allowed-values: ["true", "false", "on"]

@@ -47,7 +47,8 @@ jobs:
           set -euo pipefail
           for dir in clusters/lab/bootstrap/argocd/seed \
                      clusters/lab/bootstrap/argocd/install \
-                     clusters/lab/gitops; do
+                     clusters/lab/gitops \
+                     clusters/lab/gitops/platform/system-upgrade-controller/plans; do
             echo "== $dir =="
             kubectl kustomize "$dir" | kubeconform \
               -strict \

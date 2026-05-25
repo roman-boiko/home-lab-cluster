@@ -1,0 +1,68 @@
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  name: k3s-server
+  namespace: system-upgrade
+  labels:
+    home-lab.rboiko.com/component: k3s-upgrade
+spec:
+  concurrency: 1
+  version: v1.35.4+k3s1
+  window:
+    days:
+      - sa
+    startTime: "04:00"
+    endTime: "07:00"
+    timeZone: Europe/Berlin
+  nodeSelector:
+    matchExpressions:
+      - key: k3os.io/mode
+        operator: DoesNotExist
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+  serviceAccountName: system-upgrade
+  drain:
+    deleteEmptydirData: true
+    force: false
+    ignoreDaemonSets: true
+    skipWaitForDeleteTimeout: 60
+    timeout: 10m
+  upgrade:
+    image: rancher/k3s-upgrade
+---
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  name: k3s-agent
+  namespace: system-upgrade
+  labels:
+    home-lab.rboiko.com/component: k3s-upgrade
+spec:
+  concurrency: 1
+  version: v1.35.4+k3s1
+  window:
+    days:
+      - sa
+    startTime: "04:00"
+    endTime: "07:00"
+    timeZone: Europe/Berlin
+  nodeSelector:
+    matchExpressions:
+      - key: k3os.io/mode
+        operator: DoesNotExist
+      - key: node-role.kubernetes.io/control-plane
+        operator: DoesNotExist
+  serviceAccountName: system-upgrade
+  prepare:
+    image: rancher/k3s-upgrade
+    args:
+      - prepare
+      - k3s-server
+  drain:
+    deleteEmptydirData: true
+    force: false
+    ignoreDaemonSets: true
+    skipWaitForDeleteTimeout: 60
+    timeout: 10m
+  upgrade:
+    image: rancher/k3s-upgrade

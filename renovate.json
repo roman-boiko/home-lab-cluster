@@ -1,0 +1,90 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "timezone": "Europe/Berlin",
+  "dependencyDashboard": true,
+  "labels": [
+    "dependencies",
+    "cluster-component"
+  ],
+  "prConcurrentLimit": 5,
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+  "minimumReleaseAge": "3 days",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "argocd": {
+    "managerFilePatterns": [
+      "/clusters/lab/gitops/platform/.+/.+-application\\.ya?ml$/"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update pinned raw GitHub release URLs",
+      "managerFilePatterns": [
+        "/clusters/lab/bootstrap/argocd/install/kustomization\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?\\s+- https://raw\\.githubusercontent\\.com/[^\\s]+/(?<currentValue>v?\\d+\\.\\d+\\.\\d+)/"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update controller image overrides inside Argo CD Applications",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker",
+      "managerFilePatterns": [
+        "/clusters/lab/gitops/platform/.+/.+-application\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: image=(?<depName>[^\\s]+)\\s+- [^\\s:]+:(?<currentValue>[^\\s]+)"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group platform Helm chart updates",
+      "matchManagers": [
+        "argocd"
+      ],
+      "matchDatasources": [
+        "helm"
+      ],
+      "groupName": "platform Helm charts"
+    },
+    {
+      "description": "Keep system-upgrade-controller Git tag and image together",
+      "matchPackageNames": [
+        "rancher/system-upgrade-controller"
+      ],
+      "groupName": "system-upgrade-controller"
+    },
+    {
+      "description": "Do not auto-update the home-lab repository self references",
+      "matchPackageNames": [
+        "roman-boiko/home-lab-cluster"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep k3s and its helper images manual",
+      "matchPackageNames": [
+        "k3s-io/k3s",
+        "rancher/k3s-upgrade",
+        "rancher/kubectl"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Require manual review for major cluster component updates",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}
