@@ -61,8 +61,6 @@ Keep the private names in LAN DNS only and do not forward `192.168.5.101` from t
 Authentik is exposed through the public Gateway:
 
 - `auth.home.rboiko.com` routes to `authentik/authentik-server`.
-- `llms.home.rboiko.com/v1/*` routes directly to LiteLLM for API-key based clients.
-- `llms.home.rboiko.com/*` routes to Authentik's embedded proxy outpost, which proxies browser UI/admin traffic to LiteLLM after login.
 
 Authentik is installed by Argo CD from the official Authentik Helm chart. Its PostgreSQL database is managed separately by CloudNativePG as
 `authentik/authentik-postgres` on Longhorn storage; Authentik connects through the `authentik-postgres-rw` service. Before syncing Authentik for the first
@@ -72,8 +70,8 @@ time, create the live runtime secret:
 scripts/create-authentik-secret.sh
 ```
 
-The Authentik server includes the embedded proxy outpost. The mounted `home-lab-authentik-blueprints` ConfigMap creates the Argo CD and LiteLLM OIDC providers,
-Longhorn, Hubble, and LiteLLM UI proxy providers, and assigns those proxy providers to the embedded outpost. Add Kubernetes-managed outposts later only if separate outpost
+The Authentik server includes the embedded proxy outpost. The mounted `home-lab-authentik-blueprints` ConfigMap creates the Argo CD OIDC provider,
+Longhorn and Hubble proxy providers, and assigns those proxy providers to the embedded outpost. Add Kubernetes-managed outposts later only if separate outpost
 deployments are needed for scale or isolation.
 
 CloudNativePG is installed by Argo CD from the official CloudNativePG Helm chart. Use `scripts/migrate-authentik-postgres-to-cnpg.sh` only for the one-time
