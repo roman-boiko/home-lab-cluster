@@ -429,6 +429,8 @@ grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${au
   || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
 grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
   || fail "Authentik Hubble proxy provider does not use a resolvable in-cluster service name"
+grep -q 'internal_host: http://litellm.litellm.svc:4000$' <<< "${authentik_blueprint}" \
+  || fail "Authentik LiteLLM proxy provider does not use a resolvable in-cluster service name"
 pass "Authentik proxy providers use resolvable in-cluster service names"
 
 for key in \
@@ -520,11 +522,29 @@ pass "LiteLLM service exists"
 
 validate_public_route litellm litellm llms.home.rboiko.com litellm
 
+litellm_api_path="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[0].matches[0].path.value}')"
+[[ "${litellm_api_path}" == "/v1" ]] || fail "LiteLLM direct API route is ${litellm_api_path:-unset}, expected /v1"
+pass "LiteLLM direct API route is limited to /v1"
+
+litellm_ui_path="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].matches[0].path.value}')"
+[[ "${litellm_ui_path}" == "/" ]] || fail "LiteLLM protected UI route is ${litellm_ui_path:-unset}, expected /"
+
+litellm_ui_backend="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].name}')"
+[[ "${litellm_ui_backend}" == "authentik-server" ]] || fail "LiteLLM UI route backend is ${litellm_ui_backend:-unset}, expected authentik-server"
+
+litellm_ui_backend_namespace="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].namespace}')"
+[[ "${litellm_ui_backend_namespace}" == "authentik" ]] || fail "LiteLLM UI route backend namespace is ${litellm_ui_backend_namespace:-unset}, expected authentik"
+pass "LiteLLM UI route is protected by Authentik proxy outpost"
+validate_authentik_proxy_headers litellm litellm
+
 kubectl_wait -n authentik get referencegrant allow-longhorn-route-to-authentik
 pass "Authentik ReferenceGrant allows Longhorn route backend"
 
 kubectl_wait -n authentik get referencegrant allow-hubble-route-to-authentik
 pass "Authentik ReferenceGrant allows Hubble route backend"
+
+kubectl_wait -n authentik get referencegrant allow-litellm-route-to-authentik
+pass "Authentik ReferenceGrant allows LiteLLM route backend"
 
 kubectl_wait -n argocd get application cilium
 pass "Cilium Argo CD application exists"

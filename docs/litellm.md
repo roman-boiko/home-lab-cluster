@@ -7,7 +7,14 @@ public Gateway at:
 https://llms.home.rboiko.com
 ```
 
-The Admin UI uses Authentik OIDC. The required callback URL in Authentik is:
+The public route is intentionally split:
+
+- `/v1/*` goes directly to LiteLLM and must be authorized with LiteLLM API keys.
+- `/` and all browser UI/admin paths go through Authentik's embedded proxy
+  outpost before reaching LiteLLM.
+
+The Admin UI also uses Authentik OIDC for LiteLLM user identity and roles. The
+required callback URL in Authentik is:
 
 ```text
 https://llms.home.rboiko.com/sso/callback

@@ -123,6 +123,30 @@ data:
           meta_launch_url: https://llms.home.rboiko.com/ui
           policy_engine_mode: any
 
+      - id: litellm-proxy-provider
+        model: authentik_providers_proxy.proxyprovider
+        identifiers:
+          name: LiteLLM UI
+        attrs:
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow], [designation, invalidation]]
+          mode: proxy
+          external_host: https://llms.home.rboiko.com
+          internal_host: http://litellm.litellm.svc:4000
+          internal_host_ssl_validation: false
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/proxy/scope-proxy]]
+
+      - model: authentik_core.application
+        identifiers:
+          slug: litellm-ui
+        attrs:
+          name: LiteLLM UI
+          provider: !KeyOf litellm-proxy-provider
+          meta_launch_url: https://llms.home.rboiko.com/ui
+          policy_engine_mode: any
+
       - id: longhorn-provider
         model: authentik_providers_proxy.proxyprovider
         identifiers:
@@ -176,5 +200,6 @@ data:
           managed: goauthentik.io/outposts/embedded
         attrs:
           providers:
+            - !KeyOf litellm-proxy-provider
             - !KeyOf longhorn-provider
             - !KeyOf hubble-provider
