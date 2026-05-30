@@ -77,7 +77,7 @@ data:
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
-            - !KeyOf argocd-groups-scope
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, home-lab.rboiko.com/providers/oauth2/scope-groups]]
 
       - model: authentik_core.application
         identifiers:
@@ -112,7 +112,7 @@ data:
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
             - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
-            - !KeyOf litellm-role-scope
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, home-lab.rboiko.com/providers/oauth2/scope-litellm-role]]
 
       - model: authentik_core.application
         identifiers:
