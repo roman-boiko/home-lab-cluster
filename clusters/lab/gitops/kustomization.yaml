@@ -10,6 +10,7 @@ resources:
   - platform/cloudnative-pg
   - platform/gateway
   - platform/kured
+  - platform/litellm
   - platform/longhorn
   - platform/sealed-secrets
   - platform/system-upgrade-controller

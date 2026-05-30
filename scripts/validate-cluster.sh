@@ -418,6 +418,13 @@ grep -q 'authorization_code' <<< "${authentik_blueprint}" \
 grep -q 'signing_key: !Find \[authentik_crypto.certificatekeypair, \[name, authentik Self-signed Certificate\]\]' <<< "${authentik_blueprint}" \
   || fail "Authentik blueprint does not configure an RS256 signing key for Argo CD"
 pass "Authentik blueprint defines Argo CD OIDC groups, grant types, and signing key"
+grep -q 'scope_name: litellm_role' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not define the LiteLLM role scope"
+grep -q 'client_id: !Env LITELLM_OIDC_CLIENT_ID' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not configure the LiteLLM OIDC client ID"
+grep -q 'url: https://llms.home.rboiko.com/sso/callback' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not configure the LiteLLM OIDC callback"
+pass "Authentik blueprint defines LiteLLM OIDC provider and role scope"
 grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${authentik_blueprint}" \
   || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
 grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
@@ -433,6 +440,8 @@ for key in \
   AUTHENTIK_POSTGRESQL__PASSWORD \
   ARGOCD_OIDC_CLIENT_ID \
   ARGOCD_OIDC_CLIENT_SECRET \
+  LITELLM_OIDC_CLIENT_ID \
+  LITELLM_OIDC_CLIENT_SECRET \
   username \
   password \
   postgres-password; do
@@ -471,6 +480,45 @@ kubectl_wait -n authentik get service authentik-server
 pass "Authentik server service exists"
 
 validate_public_route authentik authentik-server auth.home.rboiko.com authentik-server
+
+kubectl_wait -n argocd get application litellm
+pass "LiteLLM Argo CD application exists"
+
+litellm_app_sync_status="$(kubectl -n argocd get application litellm -o jsonpath='{.status.sync.status}')"
+[[ "${litellm_app_sync_status}" == "Synced" ]] || fail "LiteLLM Argo CD application is ${litellm_app_sync_status:-unknown}, expected Synced"
+pass "LiteLLM Argo CD application is synced"
+
+litellm_gateway_scope="$(kubectl get namespace litellm -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${litellm_gateway_scope}" == "public" ]] || fail "litellm namespace Gateway scope is ${litellm_gateway_scope:-unset}, expected public"
+pass "LiteLLM namespace is scoped to the public Gateway"
+
+kubectl_wait -n litellm get secret litellm-runtime-secrets
+pass "LiteLLM runtime secret exists"
+
+for key in \
+  LITELLM_MASTER_KEY \
+  LITELLM_SALT_KEY \
+  GENERIC_CLIENT_ID \
+  GENERIC_CLIENT_SECRET; do
+  kubectl -n litellm get secret litellm-runtime-secrets -o "jsonpath={.data.${key}}" | grep -q . \
+    || fail "LiteLLM runtime secret is missing ${key}"
+done
+pass "LiteLLM runtime secret contains required keys"
+
+litellm_postgres_ready="$(kubectl -n litellm get cluster.postgresql.cnpg.io litellm-postgres -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}')"
+[[ "${litellm_postgres_ready}" == "True" ]] || fail "LiteLLM CloudNativePG cluster is not Ready"
+pass "LiteLLM CloudNativePG cluster is Ready"
+
+kubectl_wait -n litellm get service litellm-postgres-rw
+pass "LiteLLM CloudNativePG read-write service exists"
+
+kubectl_wait -n litellm rollout status deployment/litellm --timeout=300s
+pass "LiteLLM deployment is rolled out"
+
+kubectl_wait -n litellm get service litellm
+pass "LiteLLM service exists"
+
+validate_public_route litellm litellm llms.home.rboiko.com litellm
 
 kubectl_wait -n authentik get referencegrant allow-longhorn-route-to-authentik
 pass "Authentik ReferenceGrant allows Longhorn route backend"

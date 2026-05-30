@@ -56,3 +56,16 @@ want to invalidate existing Authentik sessions and generated identifiers.
 The same script mirrors the Argo CD OIDC client secret into
 `argocd/authentik-oidc` with the label required by Argo CD. Do not commit this
 secret in plaintext.
+
+## LiteLLM Runtime Secret
+
+LiteLLM needs a stable master key, salt key, and Authentik OIDC client secret.
+Create or refresh the live secret without printing values:
+
+```bash
+scripts/create-litellm-secret.sh
+```
+
+This creates `litellm/litellm-runtime-secrets` and patches
+`authentik/authentik-secrets` with matching `LITELLM_OIDC_CLIENT_ID` and
+`LITELLM_OIDC_CLIENT_SECRET` values. Do not commit either secret in plaintext.
