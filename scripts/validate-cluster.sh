@@ -436,6 +436,7 @@ pass "Authentik proxy providers use resolvable in-cluster service names"
 authentik_live_proxy_state="$(
   kubectl -n authentik exec deploy/authentik-server -- ak shell -c \
     "from authentik.blueprints.models import BlueprintInstance; from authentik.providers.proxy.models import ProxyProvider; from authentik.outposts.models import Outpost; bp=BlueprintInstance.objects.get(name='home-lab-apps'); has_provider=ProxyProvider.objects.filter(name='LiteLLM UI', external_host='https://llms.home.rboiko.com', internal_host='http://litellm.litellm.svc:4000').exists(); has_outpost=Outpost.objects.filter(name='authentik Embedded Outpost', providers__name='LiteLLM UI').exists(); print(f'{bp.status}:{has_provider}:{has_outpost}')" \
+    2>/dev/null \
     | tail -n 1
 )"
 IFS=':' read -r authentik_blueprint_status litellm_proxy_exists litellm_outpost_exists <<< "${authentik_live_proxy_state}"
