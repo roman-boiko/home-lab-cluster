@@ -17,6 +17,7 @@ spec:
           podAnnotations:
             home-lab.rboiko.com/authentik-secret-revision: "v4"
             home-lab.rboiko.com/authentik-brand-revision: "v1"
+            home-lab.rboiko.com/authentik-apps-revision: "v1"
         authentik:
           existingSecret:
             secretName: authentik-secrets
