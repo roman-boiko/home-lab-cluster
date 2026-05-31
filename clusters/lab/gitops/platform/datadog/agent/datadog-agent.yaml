@@ -5,8 +5,13 @@ metadata:
   namespace: datadog
 spec:
   global:
-    clusterName: lab-k3s
+    clusterName: home-lab-cluster
     site: datadoghq.com
+    tags:
+      - env:home
+    env:
+      - name: DD_ENV
+        value: home
     credentials:
       apiSecret:
         secretName: datadog-secret
