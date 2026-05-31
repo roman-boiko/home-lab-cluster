@@ -42,8 +42,6 @@ spec:
       containerCollectAll: true
       containerCollectUsingFiles: true
       autoMultiLineDetection: true
-    oomKill:
-      enabled: true
     orchestratorExplorer:
       enabled: true
     processDiscovery:
@@ -55,15 +53,3 @@ spec:
       enabled: true
       networkStats:
         enabled: true
-  override:
-    nodeAgent:
-      volumes:
-        - name: system-probe-tmp
-          emptyDir: {}
-      containers:
-        system-probe:
-          securityContext:
-            privileged: true
-          volumeMounts:
-            - name: system-probe-tmp
-              mountPath: /var/tmp/datadog-agent
