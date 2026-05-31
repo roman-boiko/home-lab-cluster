@@ -7,11 +7,11 @@ spec:
   endpointSelector:
     matchLabels: {}
   ingress:
+    # reserved:ingress is the Cilium Gateway API Envoy proxy that fronts the
+    # private Gateway; host covers node-local traffic such as kubelet probes.
     - fromEntities:
+        - ingress
         - host
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: gateway-system
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
