@@ -90,6 +90,37 @@ UI, go to **Virtual Keys → Create Key** and configure:
 Give each agentic application its own key. Never reuse the master key in
 application code.
 
+## Codex CLI
+
+Codex now requires a Responses API provider (`wire_api = "responses"`). Use
+LiteLLM OpenAI-backed aliases such as `gpt-5.5` or `gpt-5.4-mini` for Codex.
+As of LiteLLM `v1.86.2`, Claude and Gemini aliases can answer simple
+`/v1/responses` requests, but Codex agent runs fail once namespace tools are
+included in the request:
+
+```text
+litellm.APIConnectionError: Unsupported tool type: namespace
+```
+
+Create a Codex-specific LiteLLM virtual key restricted to the OpenAI-backed
+aliases, then configure Codex at the user level:
+
+```toml
+model = "gpt-5.5"
+model_provider = "litellm"
+
+[model_providers.litellm]
+name = "Home Lab LiteLLM"
+base_url = "https://llms.home.rboiko.com/v1"
+env_key = "LITELLM_API_KEY"
+wire_api = "responses"
+requires_openai_auth = false
+```
+
+Store the virtual key outside Git and expose it to Codex as `LITELLM_API_KEY`.
+For macOS shells, a safe pattern is to store the key in Keychain and export it
+from shell startup without writing the key into the dotfile.
+
 ## Local (Ollama) Provider
 
 Uncomment the `ollama/llama3` entry in
