@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: home-lab
+  source:
+    repoURL: https://helm.datadoghq.com
+    chart: datadog-operator
+    targetRevision: 2.22.2
+    helm:
+      valuesObject:
+        installCRDs: true
+        operatorMetricsEnabled: "false"
+        site: datadoghq.com
+        clusterName: lab-k3s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: datadog
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true

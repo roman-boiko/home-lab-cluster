@@ -1,0 +1,36 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: datadog
+spec:
+  global:
+    clusterName: lab-k3s
+    site: datadoghq.com
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+  features:
+    admissionController:
+      enabled: true
+    apm:
+      enabled: true
+      unixDomainSocketConfig:
+        enabled: true
+    clusterChecks:
+      enabled: true
+    eventCollection:
+      collectKubernetesEvents: true
+    kubeStateMetricsCore:
+      enabled: true
+    liveContainerCollection:
+      enabled: true
+    liveProcessCollection:
+      enabled: false
+    logCollection:
+      enabled: true
+      containerCollectAll: false
+      containerCollectUsingFiles: true
+    orchestratorExplorer:
+      enabled: true

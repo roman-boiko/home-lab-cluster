@@ -8,6 +8,7 @@ resources:
   - platform/cert-manager
   - platform/cilium
   - platform/cloudnative-pg
+  - platform/datadog
   - platform/gateway
   - platform/kured
   - platform/litellm

@@ -27,6 +27,19 @@ The script also adds `cloudflare-api-token.sealedsecret.yaml` to
 The encrypted object should create `cert-manager/cloudflare-api-token`, which is
 referenced by the `letsencrypt-prod` ClusterIssuer.
 
+## Datadog API Key
+
+Datadog needs an API key before the Datadog Agent can report telemetry. Generate
+a sealed secret from a local environment variable:
+
+```bash
+DATADOG_API_KEY=... scripts/seal-datadog-token.sh
+```
+
+This writes `clusters/lab/gitops/platform/datadog/agent/datadog-secret.sealedsecret.yaml`
+and adds it to the Datadog Agent kustomization. Commit both files. Do not commit
+the API key in plaintext.
+
 ## Authentik Runtime Secret
 
 Authentik needs a stable signing key and PostgreSQL credentials before its Argo CD

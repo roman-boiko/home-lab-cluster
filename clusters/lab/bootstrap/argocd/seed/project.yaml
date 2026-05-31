@@ -13,6 +13,7 @@ spec:
     - https://charts.longhorn.io
     - https://charts.goauthentik.io
     - https://cloudnative-pg.github.io/charts
+    - https://helm.datadoghq.com
     - https://kubereboot.github.io/charts
     - https://github.com/rancher/system-upgrade-controller.git
     - oci://registry-1.docker.io/bitnamicharts
