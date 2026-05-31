@@ -25,17 +25,33 @@ spec:
         enabled: true
     clusterChecks:
       enabled: true
+    controlPlaneMonitoring:
+      enabled: true
     eventCollection:
       collectKubernetesEvents: true
+      unbundleEvents: true
     kubeStateMetricsCore:
       enabled: true
     liveContainerCollection:
       enabled: true
     liveProcessCollection:
-      enabled: false
+      enabled: true
+      scrubProcessArguments: true
     logCollection:
       enabled: true
-      containerCollectAll: false
+      containerCollectAll: true
       containerCollectUsingFiles: true
+      autoMultiLineDetection: true
+    oomKill:
+      enabled: true
     orchestratorExplorer:
       enabled: true
+    processDiscovery:
+      enabled: true
+    prometheusScrape:
+      enabled: true
+      enableServiceEndpoints: true
+    serviceDiscovery:
+      enabled: true
+      networkStats:
+        enabled: true
