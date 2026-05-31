@@ -13,12 +13,29 @@ directly at `http://litellm.litellm.svc:4000`.
 
 ## Routing
 
-The route is split by path:
+All paths route directly to LiteLLM:
 
-- API paths (`/v1`, `/chat`, `/embeddings`, `/models`, `/key`, `/health`) route
-  directly to LiteLLM and must be authorized with a LiteLLM virtual key.
-- All other paths (`/`) route through Authentik's embedded proxy outpost, which
-  authenticates browser sessions before proxying to LiteLLM admin UI.
+- API paths (`/v1`, `/chat`, `/embeddings`, ...) are authorized with a LiteLLM
+  virtual key.
+- The admin UI is protected by LiteLLM-native OIDC single sign-on against
+  Authentik (the `/sso/callback` flow). There is no proxy outpost in front of
+  LiteLLM — running one would intercept the OIDC callback.
+
+## Single Sign-On
+
+LiteLLM authenticates UI users via Authentik OIDC. The Authentik `LiteLLM`
+OAuth2 provider issues a `litellm_role` claim derived from group membership:
+
+- Members of `Home Lab Admins` get `proxy_admin` (full admin).
+- Everyone else gets `internal_user`.
+
+The required redirect URI in Authentik is
+`https://llms.home.rboiko.com/sso/callback`.
+
+LiteLLM's browser-facing authorization request goes to the external
+`auth.home.rboiko.com`, while the server-to-server token and userinfo calls use
+the in-cluster `authentik-server.authentik.svc` service so the namespace
+`CiliumNetworkPolicy` egress covers them.
 
 ## Security Model
 
@@ -40,8 +57,12 @@ Create the runtime secret before syncing the LiteLLM Argo CD application:
 scripts/create-litellm-secret.sh
 ```
 
-This creates `litellm/litellm-runtime-secrets` with a stable master key and salt
-key. Do not rotate these after virtual keys have been issued.
+This creates `litellm/litellm-runtime-secrets` with a stable master key, salt
+key, and the Authentik OIDC client credentials (`GENERIC_CLIENT_ID` /
+`GENERIC_CLIENT_SECRET`), and mirrors the matching `LITELLM_OIDC_CLIENT_ID` /
+`LITELLM_OIDC_CLIENT_SECRET` into `authentik/authentik-secrets`. Do not rotate
+these after virtual keys or sessions have been issued. Re-run Authentik so it
+picks up the new client credentials before its blueprint reapplies.
 
 Seal the provider API keys and commit the result:
 

@@ -6,6 +6,7 @@ ignore: |
   CLAUDE.MD
   docs/**
   kubeconfig/**
+  **/*.sealedsecret.yaml
 
 rules:
   document-start: disable

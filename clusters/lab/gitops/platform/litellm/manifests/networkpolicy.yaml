@@ -17,9 +17,6 @@ spec:
             io.kubernetes.pod.namespace: cnpg-system
     - fromEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: authentik
-    - fromEndpoints:
-        - matchLabels:
             io.kubernetes.pod.namespace: litellm
   egress:
     - toEndpoints:
@@ -35,6 +32,9 @@ spec:
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: litellm
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
     - toEntities:
         - kube-apiserver
     - toEntities:

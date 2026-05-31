@@ -47,6 +47,27 @@ spec:
                   key: uri
             - name: PROXY_BASE_URL
               value: https://llms.home.rboiko.com
+            - name: PROXY_LOGOUT_URL
+              value: https://auth.home.rboiko.com/if/session-end/litellm/
+            # Browser-facing endpoint stays external (the user's browser hits it).
+            - name: GENERIC_AUTHORIZATION_ENDPOINT
+              value: https://auth.home.rboiko.com/application/o/authorize/
+            # Server-to-server endpoints use the in-cluster service so the
+            # CiliumNetworkPolicy egress (to the authentik namespace) covers them.
+            - name: GENERIC_TOKEN_ENDPOINT
+              value: http://authentik-server.authentik.svc/application/o/token/
+            - name: GENERIC_USERINFO_ENDPOINT
+              value: http://authentik-server.authentik.svc/application/o/userinfo/
+            - name: GENERIC_SCOPE
+              value: openid profile email litellm_role
+            - name: GENERIC_USER_ID_ATTRIBUTE
+              value: preferred_username
+            - name: GENERIC_USER_EMAIL_ATTRIBUTE
+              value: email
+            - name: GENERIC_USER_DISPLAY_NAME_ATTRIBUTE
+              value: name
+            - name: GENERIC_USER_ROLE_ATTRIBUTE
+              value: litellm_role
           envFrom:
             - secretRef:
                 name: litellm-runtime-secrets

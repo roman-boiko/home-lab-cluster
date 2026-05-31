@@ -422,9 +422,14 @@ grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${au
   || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
 grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
   || fail "Authentik Hubble proxy provider does not use a resolvable in-cluster service name"
-grep -q 'internal_host: http://litellm.litellm.svc:4000$' <<< "${authentik_blueprint}" \
-  || fail "Authentik LiteLLM UI proxy provider does not use a resolvable in-cluster service name"
 pass "Authentik proxy providers use resolvable in-cluster service names"
+grep -q 'scope_name: litellm_role' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not define the LiteLLM role scope"
+grep -q 'client_id: !Env LITELLM_OIDC_CLIENT_ID' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not configure the LiteLLM OIDC client ID"
+grep -q 'url: https://llms.home.rboiko.com/sso/callback' <<< "${authentik_blueprint}" \
+  || fail "Authentik blueprint does not configure the LiteLLM OIDC callback"
+pass "Authentik blueprint defines LiteLLM OIDC provider and role scope"
 
 authentik_live_state="$(
   kubectl -n authentik exec deploy/authentik-server -- ak shell -c \
@@ -445,6 +450,8 @@ for key in \
   AUTHENTIK_POSTGRESQL__PASSWORD \
   ARGOCD_OIDC_CLIENT_ID \
   ARGOCD_OIDC_CLIENT_SECRET \
+  LITELLM_OIDC_CLIENT_ID \
+  LITELLM_OIDC_CLIENT_SECRET \
   username \
   password \
   postgres-password; do
@@ -490,9 +497,6 @@ pass "Authentik ReferenceGrant allows Longhorn route backend"
 kubectl_wait -n authentik get referencegrant allow-hubble-route-to-authentik
 pass "Authentik ReferenceGrant allows Hubble route backend"
 
-kubectl_wait -n authentik get referencegrant allow-litellm-route-to-authentik
-pass "Authentik ReferenceGrant allows LiteLLM route backend"
-
 kubectl_wait -n argocd get application litellm
 pass "LiteLLM Argo CD application exists"
 
@@ -507,7 +511,7 @@ pass "LiteLLM namespace is scoped to the private Gateway"
 kubectl_wait -n litellm get secret litellm-runtime-secrets
 pass "LiteLLM runtime secret exists"
 
-for key in LITELLM_MASTER_KEY LITELLM_SALT_KEY; do
+for key in LITELLM_MASTER_KEY LITELLM_SALT_KEY GENERIC_CLIENT_ID GENERIC_CLIENT_SECRET; do
   kubectl -n litellm get secret litellm-runtime-secrets -o "jsonpath={.data.${key}}" | grep -q . \
     || fail "LiteLLM runtime secret is missing ${key}"
 done
@@ -529,34 +533,24 @@ pass "LiteLLM deployment is rolled out"
 kubectl_wait -n litellm get service litellm
 pass "LiteLLM service exists"
 
-validate_private_route litellm litellm llms.home.rboiko.com authentik-server
+validate_private_route litellm litellm llms.home.rboiko.com litellm
 
-litellm_api_path="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[0].matches[0].path.value}')"
-[[ "${litellm_api_path}" == "/v1" ]] || fail "LiteLLM direct API route is ${litellm_api_path:-unset}, expected /v1"
-pass "LiteLLM direct API route starts with /v1"
+litellm_route_path="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[0].matches[0].path.value}')"
+[[ "${litellm_route_path}" == "/" ]] || fail "LiteLLM route path is ${litellm_route_path:-unset}, expected /"
+pass "LiteLLM route serves the UI and API directly from LiteLLM"
 
-litellm_ui_backend="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].name}')"
-[[ "${litellm_ui_backend}" == "authentik-server" ]] || fail "LiteLLM UI route backend is ${litellm_ui_backend:-unset}, expected authentik-server"
-
-litellm_ui_backend_namespace="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].namespace}')"
-[[ "${litellm_ui_backend_namespace}" == "authentik" ]] || fail "LiteLLM UI route backend namespace is ${litellm_ui_backend_namespace:-unset}, expected authentik"
-pass "LiteLLM UI route is protected by Authentik proxy outpost"
-validate_authentik_proxy_headers litellm litellm
-
-litellm_live_proxy_state="$(
+litellm_live_oidc_state="$(
   kubectl -n authentik exec deploy/authentik-server -- ak shell -c \
-    "from authentik.blueprints.models import BlueprintInstance; from authentik.providers.proxy.models import ProxyProvider; from authentik.outposts.models import Outpost; bp=BlueprintInstance.objects.get(name='home-lab-apps'); has_provider=ProxyProvider.objects.filter(name='LiteLLM UI', external_host='https://llms.home.rboiko.com', internal_host='http://litellm.litellm.svc:4000').exists(); has_outpost=Outpost.objects.filter(name='authentik Embedded Outpost', providers__name='LiteLLM UI').exists(); print(f'{bp.status}:{has_provider}:{has_outpost}')" \
+    "from authentik.blueprints.models import BlueprintInstance; from authentik.providers.oauth2.models import OAuth2Provider; bp=BlueprintInstance.objects.get(name='home-lab-apps'); has_provider=OAuth2Provider.objects.filter(name='LiteLLM', redirect_uris__contains='https://llms.home.rboiko.com/sso/callback').exists(); print(f'{bp.status}:{has_provider}')" \
     2>/dev/null \
     | tail -n 1
 )"
-IFS=':' read -r litellm_blueprint_status litellm_proxy_exists litellm_outpost_exists <<< "${litellm_live_proxy_state}"
+IFS=':' read -r litellm_blueprint_status litellm_oidc_exists <<< "${litellm_live_oidc_state}"
 [[ "${litellm_blueprint_status}" == "successful" ]] \
   || fail "Authentik home-lab-apps blueprint status is ${litellm_blueprint_status:-unknown}, expected successful"
-[[ "${litellm_proxy_exists}" == "True" ]] \
-  || fail "Authentik LiteLLM UI proxy provider does not exist"
-[[ "${litellm_outpost_exists}" == "True" ]] \
-  || fail "Authentik embedded outpost does not include the LiteLLM UI proxy provider"
-pass "Authentik live state includes LiteLLM UI proxy provider"
+[[ "${litellm_oidc_exists}" == "True" ]] \
+  || fail "Authentik LiteLLM OIDC provider does not exist with the expected callback"
+pass "Authentik live state includes the LiteLLM OIDC provider"
 
 kubectl_wait -n litellm get ciliumnetworkpolicy litellm
 pass "LiteLLM CiliumNetworkPolicy exists"
