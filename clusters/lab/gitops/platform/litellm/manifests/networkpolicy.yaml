@@ -14,6 +14,9 @@ spec:
             io.kubernetes.pod.namespace: gateway-system
     - fromEndpoints:
         - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+    - fromEndpoints:
+        - matchLabels:
             io.kubernetes.pod.namespace: authentik
     - fromEndpoints:
         - matchLabels:
