@@ -16,6 +16,8 @@ spec:
         k8sServiceHost: 192.168.5.11
         k8sServicePort: 6443
         kubeProxyReplacement: true
+        prometheus:
+          enabled: true
         gatewayAPI:
           enabled: true
         hubble:
@@ -31,6 +33,8 @@ spec:
           burst: 40
         operator:
           replicas: 1
+          prometheus:
+            enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
