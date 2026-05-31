@@ -131,7 +131,8 @@ data:
           description: LiteLLM role based on Authentik groups.
           expression: |
             groups = [group.name for group in request.user.ak_groups.all()]
-            role = "proxy_admin" if "Home Lab Admins" in groups else "internal_user"
+            is_admin = request.user.is_superuser or "Home Lab Admins" in groups
+            role = "proxy_admin" if is_admin else "internal_user"
             return {
                 "litellm_role": role,
             }
