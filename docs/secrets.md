@@ -56,3 +56,30 @@ want to invalidate existing Authentik sessions and generated identifiers.
 The same script mirrors the Argo CD OIDC client secret into
 `argocd/authentik-oidc` with the label required by Argo CD. Do not commit this
 secret in plaintext.
+
+## LiteLLM Secrets
+
+LiteLLM needs two separate secrets.
+
+**Runtime secret** (not committed) — master key and salt key that must not rotate
+after virtual keys have been issued:
+
+```bash
+scripts/create-litellm-secret.sh
+```
+
+This creates `litellm/litellm-runtime-secrets`.
+
+**Provider keys** (sealed, committed) — real provider API keys for Anthropic,
+OpenAI, Gemini, and optionally a local Ollama base URL:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-… \
+OPENAI_API_KEY=sk-… \
+GEMINI_API_KEY=… \
+scripts/seal-litellm-provider-keys.sh
+```
+
+This writes `clusters/lab/gitops/platform/litellm/manifests/provider-keys.sealedsecret.yaml`
+and adds it to the manifests kustomization. Commit both files. Do not commit
+either secret in plaintext.

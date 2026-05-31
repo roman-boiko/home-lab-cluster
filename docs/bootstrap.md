@@ -51,10 +51,12 @@ Argo CD is exposed only through the private Gateway at `argocd.home.rboiko.com`.
 plain HTTP to `argocd-server` on port `80`; Argo CD uses Authentik as its OIDC provider. Runtime OIDC client material is stored in `argocd/authentik-oidc`
 and mirrored into `authentik/authentik-secrets` by `scripts/create-authentik-secret.sh`.
 
-Longhorn and Hubble UI are exposed only through the private Gateway and are protected by Authentik's embedded proxy outpost:
+Longhorn, Hubble UI, and LiteLLM are exposed only through the private Gateway and are protected by Authentik's embedded proxy outpost (admin UI) or virtual-key authentication (API):
 
 - `longhorn.home.rboiko.com` routes to `authentik/authentik-server`, which proxies to `longhorn-system/longhorn-frontend`.
 - `hubble.home.rboiko.com` routes to `authentik/authentik-server`, which proxies to `kube-system/hubble-ui`.
+- `llms.home.rboiko.com/` (admin UI) routes to `authentik/authentik-server`, which proxies to `litellm/litellm`.
+- `llms.home.rboiko.com/v1` and other API paths route directly to `litellm/litellm` and require a LiteLLM virtual key.
 
 Keep the private names in LAN DNS only and do not forward `192.168.5.101` from the router.
 
@@ -71,7 +73,7 @@ scripts/create-authentik-secret.sh
 ```
 
 The Authentik server includes the embedded proxy outpost. The mounted `home-lab-authentik-blueprints` ConfigMap creates the Argo CD OIDC provider,
-Longhorn and Hubble proxy providers, and assigns those proxy providers to the embedded outpost. Add Kubernetes-managed outposts later only if separate outpost
+Longhorn, Hubble, and LiteLLM UI proxy providers, and assigns those proxy providers to the embedded outpost. Add Kubernetes-managed outposts later only if separate outpost
 deployments are needed for scale or isolation.
 
 CloudNativePG is installed by Argo CD from the official CloudNativePG Helm chart. Use `scripts/migrate-authentik-postgres-to-cnpg.sh` only for the one-time

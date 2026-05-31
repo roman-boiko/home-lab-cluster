@@ -422,6 +422,8 @@ grep -q 'internal_host: http://longhorn-frontend.longhorn-system.svc$' <<< "${au
   || fail "Authentik Longhorn proxy provider does not use a resolvable in-cluster service name"
 grep -q 'internal_host: http://hubble-ui.kube-system.svc$' <<< "${authentik_blueprint}" \
   || fail "Authentik Hubble proxy provider does not use a resolvable in-cluster service name"
+grep -q 'internal_host: http://litellm.litellm.svc:4000$' <<< "${authentik_blueprint}" \
+  || fail "Authentik LiteLLM UI proxy provider does not use a resolvable in-cluster service name"
 pass "Authentik proxy providers use resolvable in-cluster service names"
 
 authentik_live_state="$(
@@ -487,6 +489,77 @@ pass "Authentik ReferenceGrant allows Longhorn route backend"
 
 kubectl_wait -n authentik get referencegrant allow-hubble-route-to-authentik
 pass "Authentik ReferenceGrant allows Hubble route backend"
+
+kubectl_wait -n authentik get referencegrant allow-litellm-route-to-authentik
+pass "Authentik ReferenceGrant allows LiteLLM route backend"
+
+kubectl_wait -n argocd get application litellm
+pass "LiteLLM Argo CD application exists"
+
+litellm_app_sync_status="$(kubectl -n argocd get application litellm -o jsonpath='{.status.sync.status}')"
+[[ "${litellm_app_sync_status}" == "Synced" ]] || fail "LiteLLM Argo CD application is ${litellm_app_sync_status:-unknown}, expected Synced"
+pass "LiteLLM Argo CD application is synced"
+
+litellm_gateway_scope="$(kubectl get namespace litellm -o jsonpath='{.metadata.labels.home-lab\.rboiko\.com/gateway-scope}')"
+[[ "${litellm_gateway_scope}" == "private" ]] || fail "litellm namespace Gateway scope is ${litellm_gateway_scope:-unset}, expected private"
+pass "LiteLLM namespace is scoped to the private Gateway"
+
+kubectl_wait -n litellm get secret litellm-runtime-secrets
+pass "LiteLLM runtime secret exists"
+
+for key in LITELLM_MASTER_KEY LITELLM_SALT_KEY; do
+  kubectl -n litellm get secret litellm-runtime-secrets -o "jsonpath={.data.${key}}" | grep -q . \
+    || fail "LiteLLM runtime secret is missing ${key}"
+done
+pass "LiteLLM runtime secret contains required keys"
+
+kubectl_wait -n litellm get secret litellm-provider-keys
+pass "LiteLLM provider keys secret exists"
+
+litellm_postgres_ready="$(kubectl -n litellm get cluster.postgresql.cnpg.io litellm-postgres -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}')"
+[[ "${litellm_postgres_ready}" == "True" ]] || fail "LiteLLM CloudNativePG cluster is not Ready"
+pass "LiteLLM CloudNativePG cluster is Ready"
+
+kubectl_wait -n litellm get service litellm-postgres-rw
+pass "LiteLLM CloudNativePG read-write service exists"
+
+kubectl_wait -n litellm rollout status deployment/litellm --timeout=300s
+pass "LiteLLM deployment is rolled out"
+
+kubectl_wait -n litellm get service litellm
+pass "LiteLLM service exists"
+
+validate_private_route litellm litellm llms.home.rboiko.com authentik-server
+
+litellm_api_path="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[0].matches[0].path.value}')"
+[[ "${litellm_api_path}" == "/v1" ]] || fail "LiteLLM direct API route is ${litellm_api_path:-unset}, expected /v1"
+pass "LiteLLM direct API route starts with /v1"
+
+litellm_ui_backend="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].name}')"
+[[ "${litellm_ui_backend}" == "authentik-server" ]] || fail "LiteLLM UI route backend is ${litellm_ui_backend:-unset}, expected authentik-server"
+
+litellm_ui_backend_namespace="$(kubectl -n litellm get httproute litellm -o jsonpath='{.spec.rules[1].backendRefs[0].namespace}')"
+[[ "${litellm_ui_backend_namespace}" == "authentik" ]] || fail "LiteLLM UI route backend namespace is ${litellm_ui_backend_namespace:-unset}, expected authentik"
+pass "LiteLLM UI route is protected by Authentik proxy outpost"
+validate_authentik_proxy_headers litellm litellm
+
+litellm_live_proxy_state="$(
+  kubectl -n authentik exec deploy/authentik-server -- ak shell -c \
+    "from authentik.blueprints.models import BlueprintInstance; from authentik.providers.proxy.models import ProxyProvider; from authentik.outposts.models import Outpost; bp=BlueprintInstance.objects.get(name='home-lab-apps'); has_provider=ProxyProvider.objects.filter(name='LiteLLM UI', external_host='https://llms.home.rboiko.com', internal_host='http://litellm.litellm.svc:4000').exists(); has_outpost=Outpost.objects.filter(name='authentik Embedded Outpost', providers__name='LiteLLM UI').exists(); print(f'{bp.status}:{has_provider}:{has_outpost}')" \
+    2>/dev/null \
+    | tail -n 1
+)"
+IFS=':' read -r litellm_blueprint_status litellm_proxy_exists litellm_outpost_exists <<< "${litellm_live_proxy_state}"
+[[ "${litellm_blueprint_status}" == "successful" ]] \
+  || fail "Authentik home-lab-apps blueprint status is ${litellm_blueprint_status:-unknown}, expected successful"
+[[ "${litellm_proxy_exists}" == "True" ]] \
+  || fail "Authentik LiteLLM UI proxy provider does not exist"
+[[ "${litellm_outpost_exists}" == "True" ]] \
+  || fail "Authentik embedded outpost does not include the LiteLLM UI proxy provider"
+pass "Authentik live state includes LiteLLM UI proxy provider"
+
+kubectl_wait -n litellm get ciliumnetworkpolicy litellm
+pass "LiteLLM CiliumNetworkPolicy exists"
 
 kubectl_wait -n argocd get application cilium
 pass "Cilium Argo CD application exists"

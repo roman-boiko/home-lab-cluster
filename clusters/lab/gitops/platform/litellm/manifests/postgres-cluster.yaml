@@ -1,0 +1,23 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: litellm-postgres
+  namespace: litellm
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.10
+  bootstrap:
+    initdb:
+      database: litellm
+      owner: litellm
+  storage:
+    storageClass: longhorn
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enablePodMonitor: false
