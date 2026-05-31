@@ -62,6 +62,8 @@ spec:
           emptyDir: {}
       containers:
         system-probe:
+          securityContext:
+            privileged: true
           volumeMounts:
             - name: system-probe-tmp
               mountPath: /var/tmp/datadog-agent
