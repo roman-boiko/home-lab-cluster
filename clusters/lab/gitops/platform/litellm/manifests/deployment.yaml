@@ -16,6 +16,9 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: litellm
+      annotations:
+        # Bump when config.yaml changes so the proxy reloads its model list.
+        home-lab.rboiko.com/litellm-config-revision: "v2"
     spec:
       securityContext:
         seccompProfile:
