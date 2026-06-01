@@ -18,7 +18,7 @@ spec:
         app.kubernetes.io/name: litellm
       annotations:
         # Bump when config.yaml changes so the proxy reloads its model list.
-        home-lab.rboiko.com/litellm-config-revision: "v3"
+        home-lab.rboiko.com/litellm-config-revision: "v4"
         ad.datadoghq.com/litellm.checks: |
           {
             "litellm": {
