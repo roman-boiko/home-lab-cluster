@@ -87,6 +87,8 @@ spec:
               value: kubernetes_state redisdb
         system-probe:
           env:
+            - name: DD_NETWORK_CONFIG_ENABLE_EBPFLESS
+              value: "true"
             - name: DD_ENABLE_RUNTIME_COMPILER
               value: "true"
             - name: DD_EVENT_MONITORING_CONFIG_NETWORK_ENABLED
