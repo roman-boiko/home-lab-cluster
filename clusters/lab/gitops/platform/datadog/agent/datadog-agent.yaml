@@ -85,7 +85,33 @@ spec:
           env:
             - name: DD_IGNORE_AUTOCONF
               value: kubernetes_state redisdb
+        system-probe:
+          env:
+            - name: DD_ENABLE_RUNTIME_COMPILER
+              value: "true"
+            - name: DD_EVENT_MONITORING_CONFIG_NETWORK_ENABLED
+              value: "false"
+          volumeMounts:
+            - name: host-usr-src
+              mountPath: /usr/src
+              readOnly: true
+            - name: host-lib-modules
+              mountPath: /lib/modules
+              readOnly: true
+            - name: sysprobe-runtime
+              mountPath: /var/tmp/datadog-agent/system-probe
       dnsConfig:
         options:
           - name: ndots
             value: "1"
+      volumes:
+        - name: host-usr-src
+          hostPath:
+            path: /usr/src
+            type: Directory
+        - name: host-lib-modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+        - name: sysprobe-runtime
+          emptyDir: {}
