@@ -6,6 +6,22 @@ metadata:
 spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:17.10
+  inheritedMetadata:
+    annotations:
+      ad.datadoghq.com/postgres.checks: |
+        {
+          "openmetrics": {
+            "init_config": {},
+            "instances": [
+              {
+                "openmetrics_endpoint": "http://%%host%%:9187/metrics",
+                "namespace": "cnpg",
+                "metrics": ["cnpg_*"],
+                "tags": ["cnpg_cluster:authentik-postgres"]
+              }
+            ]
+          }
+        }
   bootstrap:
     initdb:
       database: authentik

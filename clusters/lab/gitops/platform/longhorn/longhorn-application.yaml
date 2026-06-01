@@ -23,6 +23,20 @@ spec:
           volumeBindingMode: WaitForFirstConsumer
         defaultSettings:
           defaultDataPath: /var/lib/longhorn
+        annotations:
+          ad.datadoghq.com/longhorn-manager.checks: |
+            {
+              "openmetrics": {
+                "init_config": {},
+                "instances": [
+                  {
+                    "openmetrics_endpoint": "http://%%host%%:9500/metrics",
+                    "namespace": "longhorn",
+                    "metrics": ["longhorn_*"]
+                  }
+                ]
+              }
+            }
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
