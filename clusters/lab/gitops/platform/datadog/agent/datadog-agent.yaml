@@ -70,6 +70,7 @@ spec:
                 notifications_controller_endpoint: http://argocd-notifications-controller-metrics.argocd.svc.cluster.local:9001/metrics
                 tags:
                   - service:argocd
+                  - kube_namespace:argocd
       dnsConfig:
         options:
           - name: ndots
