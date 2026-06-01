@@ -52,8 +52,10 @@ spec:
         - containerPort: 4317
           hostPort: 4317
           name: otel-grpc
+          protocol: TCP
         - containerPort: 4318
           hostPort: 4318
           name: otel-http
+          protocol: TCP
     npm:
       enabled: true
