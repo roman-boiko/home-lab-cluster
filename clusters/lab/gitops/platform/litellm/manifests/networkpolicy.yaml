@@ -18,6 +18,13 @@ spec:
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: litellm
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: datadog
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:
