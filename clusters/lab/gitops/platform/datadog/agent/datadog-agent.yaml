@@ -35,6 +35,10 @@ spec:
       containerCollectAll: true
       containerCollectUsingFiles: true
       autoMultiLineDetection: true
+    npm:
+      enabled: true
+      collectDNSStats: true
+      enableConntrack: true
     orchestratorExplorer:
       enabled: true
     processDiscovery:
