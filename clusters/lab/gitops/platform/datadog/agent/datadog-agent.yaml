@@ -9,9 +9,6 @@ spec:
     site: datadoghq.com
     tags:
       - env:home
-    env:
-      - name: DD_ENV
-        value: home
     credentials:
       apiSecret:
         secretName: datadog-secret
@@ -19,10 +16,6 @@ spec:
   features:
     admissionController:
       enabled: true
-    apm:
-      enabled: true
-      unixDomainSocketConfig:
-        enabled: true
     clusterChecks:
       enabled: true
     controlPlaneMonitoring:
@@ -53,3 +46,14 @@ spec:
       enabled: true
       networkStats:
         enabled: true
+    otelCollector:
+      enabled: true
+      ports:
+        - containerPort: 4317
+          hostPort: 4317
+          name: otel-grpc
+        - containerPort: 4318
+          hostPort: 4318
+          name: otel-http
+    npm:
+      enabled: true
