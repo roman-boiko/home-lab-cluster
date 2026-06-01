@@ -59,3 +59,14 @@ spec:
           protocol: TCP
     npm:
       enabled: true
+  override:
+    clusterAgent:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+    nodeAgent:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
