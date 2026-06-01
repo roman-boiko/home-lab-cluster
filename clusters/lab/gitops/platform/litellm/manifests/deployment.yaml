@@ -18,7 +18,20 @@ spec:
         app.kubernetes.io/name: litellm
       annotations:
         # Bump when config.yaml changes so the proxy reloads its model list.
-        home-lab.rboiko.com/litellm-config-revision: "v2"
+        home-lab.rboiko.com/litellm-config-revision: "v3"
+        ad.datadoghq.com/litellm.checks: |
+          {
+            "litellm": {
+              "init_config": {},
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:4000/metrics",
+                  "litellm_health_endpoint": "http://%%host%%:4000/health/readiness",
+                  "tags": ["service:litellm"]
+                }
+              ]
+            }
+          }
     spec:
       securityContext:
         seccompProfile:

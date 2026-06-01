@@ -73,6 +73,8 @@ data:
       default_team_disabled: true
 
     litellm_settings:
+      callbacks:
+        - prometheus
       request_timeout: 600
       drop_params: true
       num_retries: 2

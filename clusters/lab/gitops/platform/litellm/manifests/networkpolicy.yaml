@@ -25,6 +25,8 @@ spec:
         - ports:
             - port: "9187"
               protocol: TCP
+            - port: "4000"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:
