@@ -20,6 +20,9 @@ spec:
           enabled: true
         gatewayAPI:
           enabled: true
+        envoy:
+          prometheus:
+            enabled: false
         hubble:
           enabled: true
           relay:

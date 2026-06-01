@@ -44,8 +44,6 @@ spec:
       enableServiceEndpoints: true
     serviceDiscovery:
       enabled: true
-      networkStats:
-        enabled: true
     otelCollector:
       enabled: true
       ports:
@@ -57,8 +55,6 @@ spec:
           hostPort: 4318
           name: otel-http
           protocol: TCP
-    npm:
-      enabled: true
   override:
     clusterAgent:
       dnsConfig:
@@ -66,6 +62,11 @@ spec:
           - name: ndots
             value: "1"
     nodeAgent:
+      containers:
+        agent:
+          env:
+            - name: DD_IGNORE_AUTOCONF
+              value: kubernetes_state redisdb
       dnsConfig:
         options:
           - name: ndots
