@@ -57,6 +57,19 @@ spec:
           protocol: TCP
   override:
     clusterAgent:
+      extraConfd:
+        configDataMap:
+          argocd.yaml: |-
+            cluster_check: true
+            init_config:
+            instances:
+              - app_controller_endpoint: http://argocd-metrics.argocd.svc.cluster.local:8082/metrics
+                appset_controller_endpoint: http://argocd-applicationset-controller.argocd.svc.cluster.local:8080/metrics
+                api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
+                repo_server_endpoint: http://argocd-repo-server.argocd.svc.cluster.local:8084/metrics
+                notifications_controller_endpoint: http://argocd-notifications-controller-metrics.argocd.svc.cluster.local:9001/metrics
+                tags:
+                  - service:argocd
       dnsConfig:
         options:
           - name: ndots
